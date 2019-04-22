@@ -42,5 +42,55 @@ let large =
 Chart.Column(large)
 log (large?Air / large?Train) |> Chart.Column
 
+let tk = 
+  readEurostatFile "raw/tran_sf_railvi.tsv"
+  |> Frame.filterRows (fun _ row -> 
+      row.GetAs "victim" = "KIL" && row.GetAs "accident" = "TOTAL" && row.GetAs "geo" <> "EU28" && row.GetAs "pers_inv" = "TOTAL")
+  |> Stats.sum
+  |> Series.dropMissing
 
+let ti = 
+  readEurostatFile "raw/tran_sf_railvi.tsv"
+  |> Frame.filterRows (fun _ row -> 
+      row.GetAs "victim" <> "KIL" && row.GetAs "accident" = "TOTAL" && row.GetAs "geo" <> "EU28" && row.GetAs "pers_inv" = "TOTAL")
+  |> Stats.sum
+  |> Series.dropMissing
 
+let ak = 
+  readEurostatFile "raw/tran_sf_aviaca.tsv"
+  |> Frame.mapValues (fun v -> if v then 1.0 else 0.0)
+  |> Frame.mapValues (fun (s:string) -> if s.EndsWith(" p") then box(float(s.Replace(" p", ""))) else box s)
+  |> Frame.filterRows (fun _ row -> row.GetAs "victim" = "KIL" && row.GetAs "geo" <> "EU28" )
+  |> Stats.sum
+  |> Series.dropMissing
+
+let ai = 
+  readEurostatFile "raw/tran_sf_aviaca.tsv"
+  |> Frame.mapValues (fun v -> if v then 1.0 else 0.0)
+  |> Frame.mapValues (fun (s:string) -> if s.EndsWith(" p") then box(float(s.Replace(" p", ""))) else box s)
+  |> Frame.filterRows (fun _ row -> row.GetAs "victim" <> "KIL" && row.GetAs "geo" <> "EU28" )
+  |> Stats.sum
+  |> Series.dropMissing
+
+frame [ "Train" => tk; "Air" => ak ] 
+|> Frame.mapRowKeys int
+|> Frame.sortRowsByKey
+|> Frame.dropSparseRows
+|> Chart.Column
+
+frame [ "Train" => ti; "Air" => ai ] 
+|> Frame.mapRowKeys int
+|> Frame.sortRowsByKey
+|> Frame.dropSparseRows
+|> Chart.Column
+
+// Save semi-cleaned version of the data for experiments
+let avia = 
+  readEurostatFile "raw/tran_sf_aviaca.tsv"
+  |> Frame.mapValues (fun v -> if v then 1.0 else 0.0)
+  |> Frame.mapValues (fun (s:string) -> if s.EndsWith(" p") then box(float(s.Replace(" p", ""))) else box s)
+let rail = 
+  readEurostatFile "raw/tran_sf_railvi.tsv"
+
+avia.SaveCsv("clean/avia.csv")
+rail.SaveCsv("clean/rail.csv")
