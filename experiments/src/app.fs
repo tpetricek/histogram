@@ -250,6 +250,8 @@ open Fable.Core
 open Fable.Import
 open Fable.PowerPack
 open Fable.PowerPack.Keyboard
+open Fable.PowerPack.Keyboard
+open Fable.PowerPack.Keyboard
 
 let renderTable data = 
   h?table ["class"=>"data"] [
@@ -261,8 +263,10 @@ let renderTable data =
 
 type Model = 
   { Program : Program 
+    Forward : Program
     Context : Context
     Code : Code
+    Initial : Code
 
     CurrentFunction : Reference option
     CurrentReplace : (Reference * string) option
@@ -270,6 +274,9 @@ type Model =
     CurrentName : (Reference * string) option }
     
 type Event = 
+  | Backward 
+  | Forward
+
   | Interact of Interaction
   | Refresh
 
@@ -285,7 +292,7 @@ type Event =
   | UpdateName of (Reference * string) option
 
 let interact op model =
-  { model with Program = model.Program @ [op]; Code = apply model.Context model.Code op }
+  { model with Program = model.Program @ [op]; Code = apply model.Context model.Code op; Forward = [] }
 
 let parse s = 
   match System.Int32.TryParse(s) with 
@@ -293,6 +300,18 @@ let parse s =
   | _ -> PrimitiveType "string", PrimitiveValue s
 
 let update model = function
+  | Forward ->
+      let prog = List.head model.Forward :: model.Program
+      let fwd = List.tail model.Forward
+      let code = apply model.Context model.Code (List.head model.Forward)
+      { model with Program = prog; Code = code; Forward = fwd }
+  | Backward ->
+      let prog, last = match List.rev model.Program with x::xs -> List.rev xs, x | _ -> failwith "Cannot go back"
+      let fwd = last :: model.Forward
+      let code = prog |> List.fold (apply model.Context) model.Initial 
+      printf "BEFORE: %d, AFTER: %d" model.Program.Length prog.Length
+      { model with Program = prog; Forward = fwd; Code = code }
+
   | Refresh -> model
 
   | UpdateCurrentFunction f ->
@@ -323,11 +342,11 @@ let update model = function
 
 let cols els = 
   h?table [] [
-    h?tr [] [ for e in els -> h?td [ "class" => "cell" ] [ e ] ]
+    h?tr [] [ for e in els -> h?td [ "class" => "cell cell-col" ] [ e ] ]
   ]
 let rows els = 
   h?table [] [ 
-    for e in els -> h?tr [] [ h?td [ "class" => "cell" ] [ e ] ] 
+    for e in els -> h?tr [] [ h?td [ "class" => "cell cell-row" ] [ e ] ] 
   ]
 
 let renderPreview trigger (v:Value) = 
@@ -351,77 +370,114 @@ and formatExpression code = function
   | Member(ref, s) -> sprintf "%s.%s" (formatReference code ref) s
   | Invocation(ref, args) -> sprintf "%s(%s)" (formatReference code ref) (String.concat ", " (List.map (formatReference code) args))
 
+
+let groupSource source = 
+  let refs =  
+    [ for r, e in source do
+        match e with Invocation(t, _) | Member(t, _) -> yield t, r | _ -> () ] 
+    |> List.groupBy fst 
+    |> List.choose (function (k, [_, it]) -> Some(k, it) | _ -> None)
+    |> dict
+
+  let rec follow r = seq {
+    yield r
+    if refs.ContainsKey r then 
+      yield! follow refs.[r] }
+
+  let chains = 
+    [ for r, _ in source -> r, List.ofSeq (follow r) ]
+    |> List.sortByDescending (snd >> List.length)
+    |> List.fold (fun (visited, res) (s, chain) ->
+        if Set.contains s visited then visited, res
+        else Set.union visited (set chain), (s, chain)::res) (Set.empty, [])
+    |> snd
+    |> List.filter (fun (_, g) -> List.length g > 1)
+    |> dict
+  
+  let inChains = set (Seq.concat chains.Values)
+  let sourceLookup = dict source
+
+  [ for r, _ in source do
+      if chains.ContainsKey r then yield chains.[r]
+      elif Set.contains r inChains then ()
+      else yield [r] ]
+  |> List.map (List.map (fun r -> r, sourceLookup.[r]))
+
+
 let renderCode trigger state = 
-  let named = state.Program |> List.choose (function Name(ref, _) -> Some ref | _ -> None) |> set
-  let nonHidden = state.Code.Source |> List.filter (fun (k, _) -> not (Set.contains k named))
   let getValue k = state.Code.Values.TryFind(k) |> Option.bind (fun (h, v) -> if hashCode state.Code k = h then Some v else None)
   cols [ 
-    for k, v in nonHidden -> h?div [] [
-      yield h?strong [] [ text (string k) ]
-      yield h?br [] []
-      yield text (formatExpression state.Code v)
-      yield h?br [] []
-
-      match v, state.CurrentReplace with
-      | Value(_, PrimitiveType t), Some(ref, v) when ref = k ->
-          yield h?input [ 
-            "input" =!> fun e _ -> trigger(UpdateReplace(Some(ref, unbox<Browser.HTMLInputElement>(e).value))) 
-            "keydown" =!> fun _ k -> 
-              match int (unbox<Browser.KeyboardEvent>(k).keyCode) with
-              | 13 -> trigger(FinishReplace)
-              | 27 -> trigger(UpdateReplace None)
-              | _ -> ()
-            ] []
-          yield h?br [] []
-      | Value(v, PrimitiveType t), _ ->
-          yield h?a [ "href"=>"#"; "click" =!> fun _ _ -> trigger(UpdateReplace(Some(k, ""))) ] [ text "replace" ]
-          yield h?br [] []
-      | _ -> ()
-
-      match state.CurrentName with
-      | Some(ref, n) when ref = k ->
-          yield h?input [ 
-            "value" => n
-            "input" =!> fun e _ -> trigger(UpdateName(Some(ref, unbox<Browser.HTMLInputElement>(e).value))) 
-            "keydown" =!> fun _ k -> 
-              match int (unbox<Browser.KeyboardEvent>(k).keyCode) with
-              | 13 -> trigger(FinishNaming)
-              | 27 -> trigger(UpdateName None)
-              | _ -> ()
-            ] []
-      | _ ->
-          yield h?a [ "href"=>"#"; "click" =!> fun _ _ -> trigger(UpdateName(Some(k, ""))) ] [ text "name" ]
-          yield h?br [] []
-
-      match state.CurrentFunction with
-      | Some ref when ref = k -> 
-          yield rows [
-            for inp in getInputs state.Code ref ->
-              h?button ["click" =!> fun _ _ -> trigger(Interact(Abstract([inp], k)))] [ text ("taking " + string inp) ]
-          ]
-      | _ -> 
-        yield h?a [ "href"=>"#"; "click" =!> fun _ _ -> trigger(UpdateCurrentFunction(Some(k))) ] [ text "function" ]
+    for g in groupSource state.Code.Source -> rows [
+      for k, v in g -> h?div [] [
+        yield h?strong [] [ text (string k) ]
+        yield h?br [] []
+        yield text (formatExpression state.Code v)
         yield h?br [] []
 
-      match state.Code.Completions with
-      | Some(ref, compl) when k = ref ->
-          yield rows [
-            for n, c in compl -> h?button ["click" =!> fun _ _ -> trigger(Interact(Complete c)) ] [ text n]
-          ]
-      | _ ->
-          yield h?a [ "href"=>"#"; "click" =!> fun _ _ -> trigger(Interact(Completions k)) ] [ text "completions" ]
+        match v, state.CurrentReplace with
+        | Value(_, PrimitiveType t), Some(ref, v) when ref = k ->
+            yield h?input [ 
+              "input" =!> fun e _ -> trigger(UpdateReplace(Some(ref, unbox<Browser.HTMLInputElement>(e).value))) 
+              "keydown" =!> fun _ k -> 
+                match int (unbox<Browser.KeyboardEvent>(k).keyCode) with
+                | 13 -> trigger(FinishReplace)
+                | 27 -> trigger(UpdateReplace None)
+                | _ -> ()
+              ] []
+            yield h?br [] []
+        | Value(v, PrimitiveType t), _ ->
+            yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(UpdateReplace(Some(k, ""))) ] [ text "replace" ]
+            yield h?br [] []
+        | _ -> ()
+
+        match state.CurrentName with
+        | Some(ref, n) when ref = k ->
+            yield h?input [ 
+              "value" => n
+              "input" =!> fun e _ -> trigger(UpdateName(Some(ref, unbox<Browser.HTMLInputElement>(e).value))) 
+              "keydown" =!> fun _ k -> 
+                match int (unbox<Browser.KeyboardEvent>(k).keyCode) with
+                | 13 -> trigger(FinishNaming)
+                | 27 -> trigger(UpdateName None)
+                | _ -> ()
+              ] []
+            yield h?br [] []
+        | _ ->
+            yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(UpdateName(Some(k, ""))) ] [ text "name" ]
+            yield h?br [] []
+
+        match state.CurrentFunction with
+        | Some ref when ref = k -> 
+            yield rows [
+              for inp in getInputs state.Code ref ->
+                h?button ["click" =!> fun _ _ -> trigger(Interact(Abstract([inp], k)))] [ text ("taking " + string inp) ]
+            ]
+        | _ -> 
+          yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(UpdateCurrentFunction(Some(k))) ] [ text "function" ]
           yield h?br [] []
 
-      match getValue k with
-      | Some(v) ->
-          yield renderPreview trigger v
-      | None -> 
-          yield h?a [ "href"=>"#"; "click" =!> fun _ _ -> trigger(Interact(Evaluate k)) ] [ text "evaluate" ]
-          yield h?br [] []      
+        match state.Code.Completions with
+        | Some(ref, compl) when k = ref && List.isEmpty compl ->
+            yield rows [ text "(no completions)" ]
+        | Some(ref, compl) when k = ref ->
+            yield rows [
+              for n, c in compl -> h?button ["click" =!> fun _ _ -> trigger(Interact(Complete c)) ] [ text n]
+            ]
+        | _ ->
+            yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(Interact(Completions k)) ] [ text "completions" ]
+            yield h?br [] []
+
+        match getValue k with
+        | Some(v) ->
+            yield renderPreview trigger v
+        | None -> 
+            yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(Interact(Evaluate k)) ] [ text "evaluate" ]
+            yield h?br [] []      
+        ]
       ]
     yield h?div [] [
       if state.CurrentValue = None then
-        yield h?a [ "href"=>"#"; "click" =!> fun _ _ -> trigger(UpdateAddValue (Some "")) ] [ text "add value" ]
+        yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(UpdateAddValue (Some "")) ] [ text "Add value" ]
       else
         yield text "Add value"
         yield h?br [] [] 
@@ -436,9 +492,18 @@ let renderCode trigger state =
   ]
 
 let view trigger state =
-  Browser.console.log("PROGRAM")
-  for p in state.Program do Browser.console.log(" * ", string p)
-  renderCode trigger state 
+  //Browser.console.log("PROGRAM")
+  //for p in state.Program do Browser.console.log(" * ", string p)
+  h?div [] [
+    h?div [] [
+      if not (List.isEmpty state.Program) then
+        yield h?a [ "href" => "javascript:;"; "click" =!> fun _ _ -> trigger Backward] [ text "<- Back" ] 
+      yield text (sprintf " (%d past interactions, %d forward) " state.Program.Length state.Forward.Length)
+      if not (List.isEmpty state.Forward) then
+        yield h?a [ "href" => "javascript:;"; "click" =!> fun _ _ -> trigger Forward ] [ text "Forward ->" ] 
+    ]
+    renderCode trigger state 
+  ]
 
 
 // ------------------------------------------------------------------------------------------------
@@ -541,7 +606,8 @@ Async.StartImmediate <| async {
   let! avia = dataArray "data/avia.csv"
   let! rail = dataArray "data/rail.csv"
   let ctx = { External = Map.ofList ["avia", avia; "rail", rail] }
-  let prog = 
+  let prog = []
+  let _prog = 
     [ DefineValue (PrimitiveValue 2500,PrimitiveType "number") 
       Completions (Named "avia")
       Complete (Dot (Named "avia","at"))
@@ -562,23 +628,9 @@ Async.StartImmediate <| async {
       Completions (Indexed 8)
       Complete (Apply (Indexed 8,"predicate",Indexed 7))
     ]
-  let _prog = 
-    [ DefineValue(PrimitiveValue 0, PrimitiveType "number")
-      DefineValue(PrimitiveValue 10, PrimitiveType "number")
-      Completions(Indexed 0)
-      Complete(Dot(Indexed 0, "equals"))
-      Completions(Indexed 2)
-      Complete(Apply(Indexed 2, "other", Indexed 1))
-      Abstract([Indexed 0], Indexed 3)
-      DefineValue(PrimitiveValue 10, PrimitiveType "number")
-      Completions(Indexed 4)
-      Complete(Apply(Indexed 4, "arg0", Indexed 5))
-      Evaluate(Indexed 3)
-      Evaluate(Indexed 6)
-    ]
   let code = prog |> List.fold (apply ctx) initial
   let state = 
-    { Code = code; Program = prog; Context = ctx; CurrentFunction = None
+    { Initial = initial; Code = code; Program = prog; Context = ctx; CurrentFunction = None; Forward = [];
       CurrentValue = None; CurrentName = None; CurrentReplace = None }
   createVirtualDomApp "out" state view update 
 }
