@@ -2,13 +2,13 @@
 <html>
 <head>
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>  
-  <link href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,600,700" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,600,700|Roboto+Mono:300,400" rel="stylesheet">
   <style type="text/css">
     body { font-family:'Titillium Web', sans-serif; padding:20px 20px 200px 20px; }
-    table { border-spacing:4px; border-collapse:separate; }
-    table, tr, td { padding:0px; margin:0px; border-style:none; border-width:0px; }
     td { vertical-align:top; }
-    tr { background:#f0f0f0; }
+    table.sheet { border-spacing:4px; border-collapse:separate; }
+    table.sheet, tr, td { padding:0px; margin:0px; border-style:none; border-width:0px; }
+    table.sheet tr { background:#f0f0f0; }
     .cell { border:solid 1px black; background:#f8f8f8; padding:5px; }
     .cell-col { background:#e8e8e8; }
     table.data { border-spacing:0px; }
@@ -16,6 +16,77 @@
     table.data tr:first-child { background:#e0e0e0; }
     table.data tr:nth-child(2n) { background:#e8e8e8; }
     .preview { overflow:auto; max-width:400px; max-height:300px; }
+
+    span.expr {
+      border:solid 1px #a0a0a0;
+      padding:3px 5px 3px 5px;
+      display: inline-block;
+      border-radius: 4px;
+      margin:0px 2px 0px 2px;
+      cursor:pointer;
+    }
+
+    div.code div.completions {
+      position: absolute;
+      border-radius:4px;
+      border:solid 1px #a0a0a0;
+      background: #f0f0f0;
+      min-width: 80px;
+      padding:2px;
+    }
+    div.code div.completions a {
+      display:block;
+      color:black;
+      width:100%;
+      margin:1px 5px 1px 5px;
+      text-align:left;
+      font-family:'Titillium Web';
+      text-decoration:none;
+    }
+    div.code div.completions hr {
+      border-style:none;
+      border-top:solid 1px #a0a0a0;
+      margin:0px;
+    }
+    div.code div.completions a:hover {
+      font-weight: bold;
+    }
+    div.code {
+      margin:30px 0px 30px 0px;
+      padding-left:10px;
+      font: 300 11pt 'Roboto Mono',monospace;
+    }
+    div.code button.plus {
+      border-radius: 4px;
+      border-width: 0px;
+      padding:5px;
+      background: #D8B100;
+    }
+    div.code button.value {
+      border-radius: 4px;
+      border-width: 0px;
+      padding:7px 12px 7px 12px;
+      border:solid 1px #a0a0a0;
+      background: #f0f0f0;
+      font: 300 9pt 'Roboto Mono',monospace;
+    }
+    div.code input {
+      max-width:60px; 
+      font: 300 10pt 'Roboto Mono',monospace;
+      border-radius: 3px;
+      border:solid 1px #a0a0a0;
+      padding:2px;
+    }
+    span.selected {
+      background: #EAD577;
+    }
+    span.highlighted {
+      background: #FFF2BA;
+    }
+    span.let {
+      margin: 10px 0px 0px -10px;
+      display: block;
+    }
   </style>
 </head>
 <body>
