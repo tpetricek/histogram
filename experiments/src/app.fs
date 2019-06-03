@@ -26,6 +26,7 @@ type Expr =
 
 and ObjectType = 
   abstract Members : (string * Type) list
+  abstract Refine : Value -> ObjectType
 
 and Type = 
   | PrimitiveType of string
@@ -51,6 +52,7 @@ type CompletionName =
 
 type Code = 
   { Source : list<Reference * Expr>
+    Types : Map<Reference, Type>
     Values : Map<Reference, int * Value>
     Arguments : Map<string, Reference> option
     Counter : int
@@ -102,28 +104,6 @@ let rec typesMatch t1 t2 =
       List.forall2 (fun a1 a2 -> typesMatch (snd a1) (snd a2)) args1 args2 
   | _ -> false
 
-let rec typeCheck ctx code expr = 
-  match expr with
-  | Value(value, typ) -> typ
-
-  | Invocation(op, args) ->
-      match typeCheck ctx code (find op code.Source) with 
-      | OperationType(expectedArgs, res) ->
-          let argTys = [ for a in args -> typeCheck ctx code (find a code.Source) ]
-          for (n, expected), actual in List.zip expectedArgs argTys do 
-            if not (typesMatch expected actual) then
-              failwithf "Type mismatch (or cannot compare): '%s' and '%s'" (string expected) (string actual)
-          res
-
-      | ty -> failwithf "Cannot invoke non-operation typed thing of type: %s" (string ty)
-  
-  | External(s) -> snd ctx.External.[s]
-  | Member(ref, name) ->
-      let mems = typeCheck ctx code (find ref code.Source) |> getMemberTypes
-      match Seq.tryFind (fun (n, _) -> n = name) mems with
-      | None -> failwithf "Member %s not found" name
-      | Some(_, t) -> t
-
 let rec getInputs code ref = 
   match find ref code.Source with
   | Value _ -> Set.empty
@@ -138,6 +118,7 @@ let rec hashCode code ref =
   match find ref code.Source with
   | Value(PrimitiveValue v, PrimitiveType t) -> hash (v, t)
   | Value(ObjectValue o, ObjectType _) -> o.Hash
+  | Value(OperationValue(Some(rs, r), _), OperationType _) -> hash [ for r in r::rs -> hashCode code r ]
   | Value(OperationValue _, OperationType _) -> 42 // TODO: Find some clever way of hashing functions...
   | Value(v, t) -> failwithf "Cannot hash non-primitive values: %A" (v, t)
   | Invocation(ref, args) -> hash [ for r in ref::args -> hashCode code r ]
@@ -187,24 +168,51 @@ let substituteReference rold rnew expr =
   | Invocation(r, args) -> Invocation(subst r, List.map subst args)
   | e -> e
 
+let addExpression ctx code nexpr =
+  let ntyp =
+    match nexpr with
+    | Value(_, typ) -> typ
+    | External(s) -> snd ctx.External.[s]
+    | Invocation(op, args) ->
+        match code.Types.[op] with 
+        | OperationType(expectedArgs, res) ->
+            let argTys = [ for a in args -> code.Types.[a] ]
+            for (_, expected), actual in List.zip expectedArgs argTys do 
+              if not (typesMatch expected actual) then
+                failwithf "Type mismatch (or cannot compare): '%s' and '%s'" (string expected) (string actual)
+            res
+        | ty -> failwithf "Cannot invoke non-operation typed thing of type: %s" (string ty)    
+    | Member(ref, name) ->
+        let mems = code.Types.[ref] |> getMemberTypes
+        match Seq.tryFind (fun (n, _) -> n = name) mems with
+        | None -> failwithf "Member %s not found" name
+        | Some(_, t) -> t
+  { code with 
+      Types = code.Types.Add(Indexed code.Counter, ntyp)
+      Source = code.Source @ [ (Indexed code.Counter, nexpr) ]; Counter = code.Counter + 1 }
+
 let rec apply ctx code interaction =
+  // (fun res -> 
+  //   printfn "\nAPPLIED: %A" interaction
+  //   for r, e in res.Source do
+  //     printfn "%A = %A" r e
+  //     printfn "   Type = %A" res.Types.[r]
+  //   res) <|
   match interaction with
   | Abstract(argRefs, res) ->
       let v = OperationValue(Some(argRefs, res), fun argVals ->
         let replaces = 
           List.zip argRefs argVals 
-          |> List.map (fun (r, v) -> ReplaceValue(r, v, typeCheck ctx code (find r code.Source)))
+          |> List.map (fun (r, v) -> ReplaceValue(r, v, code.Types.[r]))
         let virtualCode = 
           List.append replaces [ Evaluate(res) ]
           |> List.fold (apply ctx) code
         virtualCode.Values.[res] |> snd )
       let argTys = 
         [ for i, r in Seq.indexed argRefs -> 
-            sprintf "arg%d" i, typeCheck ctx code (find r code.Source) ]
-      let t = OperationType(argTys, typeCheck ctx code (find res code.Source))
-      let nexpr = Value(v, t)
-      let nref = Indexed(code.Counter)
-      { code with Source = code.Source @ [ (nref, nexpr) ]; Counter = code.Counter + 1 }
+            sprintf "arg%d" i, code.Types.[r] ]
+      let t = OperationType(argTys, code.Types.[res])
+      addExpression ctx code (Value(v, t))
 
   | ReplaceValue(ref, v, t) ->
       let nexpr = Value(v, t)
@@ -212,17 +220,14 @@ let rec apply ctx code interaction =
       { code with Source = nsource }
 
   | DefineValue(v, t) ->
-      let nexpr = Value(v, t)
-      let nref = Indexed(code.Counter)
-      { code with Source = code.Source @ [ (nref, nexpr) ]; Counter = code.Counter + 1 }
+      addExpression ctx code (Value(v, t))
 
   | Completions(ref) ->
-      let ty = typeCheck ctx code (find ref code.Source)
-      match ty with 
+      match code.Types.[ref] with 
       | OperationType(args, res) ->
           let appliedArgs = defaultArg code.Arguments Map.empty
           let args = args |> List.filter (fst >> appliedArgs.ContainsKey >> not)
-          let srcTypes = [ for ref, c in code.Source -> ref, typeCheck ctx code c ]
+          let srcTypes = [ for ref, _ in code.Source -> ref, code.Types.[ref] ]
           let compl = 
             [ for arg, argTy in args do
               for src, srcTy in srcTypes do
@@ -239,18 +244,15 @@ let rec apply ctx code interaction =
       | Apply(opRef, arg, argRef) ->
           let actualArgs = defaultArg code.Arguments Map.empty |> Map.add arg argRef
           let actualSet = set [ for kvp in actualArgs -> kvp.Key ]
-          match typeCheck ctx code (find opRef code.Source) with 
+          match code.Types.[opRef] with 
           | OperationType(expectedArgs, res) when actualSet = set (List.map fst expectedArgs) ->
-              let nexpr = Invocation(opRef, [ for n, _ in expectedArgs -> actualArgs.[n]])
-              let nref = Indexed(code.Counter)
-              { code with Source = code.Source @ [ (nref, nexpr) ]; Arguments = None; Counter = code.Counter + 1; Completions = None }
+              addExpression ctx code
+                (Invocation(opRef, [ for n, _ in expectedArgs -> actualArgs.[n]]))
           | _ -> 
               { code with Arguments = Some actualArgs }
 
       | Dot(ref, m) -> 
-          let nexpr = Member(ref, m)
-          let nref = Indexed(code.Counter)
-          { code with Source = code.Source @ [ (nref, nexpr) ]; Counter = code.Counter + 1; Completions = None }
+          addExpression ctx code (Member(ref, m))
 
   | Name(ref, name) ->
       let source = 
@@ -261,10 +263,18 @@ let rec apply ctx code interaction =
         [ for (KeyValue(r, (n, v))) in code.Values ->
             (if r = ref then Named name else r),
             (n, substituteValueReference r (Named name) v) ] |> Map.ofList
-      { code with Source = source; Values = values }
+      let types = 
+        [ for (KeyValue(r, t)) in code.Types ->
+            (if r = ref then Named name else r), t ] |> Map.ofList
+      { code with Source = source; Values = values; Types = types }
 
   | Evaluate(ref) ->
-      { code with Values = snd (evaluate ctx code code.Values ref) }
+      let res, values = evaluate ctx code code.Values ref
+      let newType = 
+        match code.Types.[ref] with
+        | ObjectType ot -> ObjectType(ot.Refine(res))
+        | typ -> typ
+      { code with Values = values; Types = code.Types.Add(ref, newType) }
 
 
 // ------------------------------------------------------------------------------------------------
@@ -286,8 +296,8 @@ let renderTable data =
 
 
 type CodeState = 
-  { SelectedPath : Reference option
-    HighlightedPath : Reference option }
+  { SelectedPath : Reference list option
+    HighlightedPath : Reference list option }
 
 type Model = 
   { Program : Program 
@@ -305,8 +315,8 @@ type Model =
     }
 
 type CodeEvent = 
-  | Select of Reference option
-  | Highlight of Reference option
+  | Select of Reference list option
+  | Highlight of Reference list option
 
 
 type Event = 
@@ -394,8 +404,8 @@ let rows els =
     for e in els -> h?tr [] [ h?td [ "class" => "cell cell-row" ] [ e ] ] 
   ]
 
-let renderPreview trigger (v:Value) = 
-  h?div ["class" => "preview" ] [ 
+let renderPreview cls trigger (v:Value) = 
+  h?div ["class" => cls ] [ 
     match v with 
     | OperationValue(_, v) -> yield text ("(Operation)")
     | ObjectValue v -> yield h?div [] [ text "Object:"; v.Preview(fun () -> trigger Refresh) ]
@@ -521,7 +531,7 @@ let renderSheet trigger state =
 
         match getValue state k with
         | Some(v) ->
-            yield renderPreview trigger v
+            yield renderPreview "preview" trigger v
         | None -> 
             yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(Interact(Evaluate k)) ] [ text "evaluate" ]
             yield h?br [] []      
@@ -594,27 +604,30 @@ let rec formatReferencedExpr ctx ref =
         yield ")"
       ]
 
-let renderSelectableBox ctx ref extras body =
+let pathStarts path pathOpt = 
+  match path, pathOpt with 
+  | p1::_, Some(p2::_) -> p1 = p2
+  | _ -> false
+
+let renderSelectableBox ctx (path, ref) extras body =
   h?span [] [ 
     yield h?span 
       [ yield "class" => 
-          if Some ref = ctx.State.SelectedPath then "expr selected" 
-          elif Some ref = ctx.State.HighlightedPath then "expr highlighted" 
+          if pathStarts path ctx.State.SelectedPath then "expr selected" 
+          elif pathStarts path ctx.State.HighlightedPath then "expr highlighted" 
           else "expr"
-        yield "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger (CodeEvent(Select(Some ref))) 
-        yield "mousemove" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger (CodeEvent(Highlight(Some ref)))
+        yield "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger (CodeEvent(Select(Some path))) 
+        yield "mousemove" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger (CodeEvent(Highlight(Some path)))
         yield! extras
       ] [ body ]
-    if Some ref = ctx.State.SelectedPath then
+    if pathStarts path ctx.State.SelectedPath then
       yield h?div [ "style" => "display:inline-block" ] [
         yield h?button [ 
           "class" => "plus"
           "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(Interact(Completions ref))
         ] [ text "+" ]        
         match ctx.AllState.Code.Completions with
-        | Some(k, compl) when k = ref && List.isEmpty compl ->
-            yield h?div [ "class" => "completions" ] [ text "(no completions)" ]
-        | Some(k, compl) when k = ref ->
+        | Some(k, compl) when Some path = ctx.State.SelectedPath && k = ref ->
             yield h?div [ "class" => "completions" ] [
               match ctx.AllState.CurrentName with
               | Some(k, n) when ref = k ->
@@ -632,21 +645,22 @@ let renderSelectableBox ctx ref extras body =
               match ctx.AllState.CurrentFunction with
               | Some k when ref = k -> 
                   for inp in getInputs ctx.AllState.Code ref ->
-                    h?a ["click" =!> fun _ _ -> ctx.Trigger(Interact(Abstract([inp], k)))] [ text ("taking " + formatReferencedExpr ctx inp) ]
+                    h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Abstract([inp], k)))] [ text ("taking " + formatReferencedExpr ctx inp) ]
               | _ -> 
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(UpdateCurrentFunction(Some(k))) ] [ text "function" ]
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(UpdateName(Some(k, ""))) ] [ text "name" ]              
-                yield h?hr [] []
-                let formatCompl = function
-                  | NamedCompletion n -> n
-                  | ParameterCompletion pars -> [ for n, r in pars -> sprintf "%s = %s" n (formatReferencedExpr ctx r) ] |> String.concat ", "
-                for n, c in compl -> h?a ["href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Complete c)) ] [ text (formatCompl n) ]
+                if not (List.isEmpty compl) then
+                  yield h?hr [] []
+                  let formatCompl = function
+                    | NamedCompletion n -> n
+                    | ParameterCompletion pars -> [ for n, r in pars -> sprintf "%s = %s" n (formatReferencedExpr ctx r) ] |> String.concat ", "
+                  for n, c in compl -> h?a ["href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Complete c)) ] [ text (formatCompl n) ]
             ]
         | _ -> () 
       ]
   ]
 
-let rec renderReferencedExpression ctx ref = 
+let rec renderReferencedExpression ctx (path, ref) = 
   match ref, ctx.AllState.CurrentReplace with 
   | _ when ctx.Variables.ContainsKey ref -> text (ctx.Variables.[ref])
   | _, Some(r, v) when r = ref ->
@@ -662,12 +676,12 @@ let rec renderReferencedExpression ctx ref =
   | Named n, _ 
         when collectReferences ctx.Code (find ref ctx.Code) 
              |> Seq.exists ctx.Variables.ContainsKey |> not -> 
-      renderSelectableBox ctx ref [] (text n)
-  | r, _ -> renderExpression ctx ref (find r ctx.Code)
+      renderSelectableBox ctx (path, ref) [] (text n)
+  | r, _ -> renderExpression ctx (path, ref) (find r ctx.Code)
 
-and renderExpression (ctx:RenderContext) ref expr = 
-  let rsb = renderSelectableBox ctx ref []
-  let rsbe = renderSelectableBox ctx ref 
+and renderExpression (ctx:RenderContext) (path, ref) expr = 
+  let rsb = renderSelectableBox ctx (path, ref) []
+  let rsbe = renderSelectableBox ctx (path, ref) 
   match expr with 
   | External(s) -> text (sprintf "external(%s)" s) |> rsb
   | Value(PrimitiveValue v, PrimitiveType "string") -> 
@@ -690,24 +704,23 @@ and renderExpression (ctx:RenderContext) ref expr =
         for _, n in vars -> text (n + " ")
         yield text "-> "
         let ctx = { ctx with Variables = Map.ofSeq vars }
-        printfn "Looking for %A" output
-        yield renderExpression ctx output (find output ctx.Code)        
+        yield renderExpression ctx (output::path, output) (find output ctx.Code)        
       ] |> rsb
   | Value(OperationValue(None, _), _) -> text ("(built-in function)") |> rsb
   | Member(r, s) -> 
       h?span [] [ 
-        renderReferencedExpression ctx r
+        renderReferencedExpression ctx (r::path, r)
         text "."
         text s
       ] |> rsb
   | Invocation(r, rs) -> 
       h?span [] [ 
-        yield renderReferencedExpression ctx r
+        yield renderReferencedExpression ctx (r::path, r)
         yield h?span [] [ 
           yield text "("
           for i, r in Seq.indexed rs do
             if i <> 0 then yield text ", "
-            yield renderReferencedExpression ctx r
+            yield renderReferencedExpression ctx (r::path, r)
           yield text ")"
         ]
       ] |> rsb
@@ -730,10 +743,10 @@ let renderText trigger (state:Model) =
             | Named n, _ ->
                 yield h?span [ "class" => "let" ] [ text ("let " + n + " = ") ]
                 //yield renderReferencedExpression ctx ref 
-                yield renderExpression ctx ref (find ref ctx.Code)
+                yield renderExpression ctx ([ref], ref) (find ref ctx.Code)
             | Indexed n, false ->
                 yield h?span [ "class" => "let" ] [ text (sprintf "do[%d]" n) ]
-                yield renderReferencedExpression ctx ref 
+                yield renderReferencedExpression ctx ([ref], ref) 
             | _ -> ()
           ]
         yield h?div [] [
@@ -753,17 +766,17 @@ let renderText trigger (state:Model) =
   let preview = 
     h?div [] [ 
       match ctx.State.HighlightedPath, ctx.State.SelectedPath with
-      | Some ref, _ 
-      | _, Some ref ->
+      | Some (ref::_), _ 
+      | _, Some (ref::_) ->
           match getValue ctx.AllState ref with
           | Some(v) ->
-              yield renderPreview trigger v
+              yield renderPreview "bigpreview" trigger v
           | None -> 
               yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(Interact(Evaluate ref)) ] [ text "evaluate" ]
       | _ -> ()
     ]
 
-  h?table [] [ h?tr [] [ h?td [] [ code ]; h?td [] [ preview ] ] ]
+  h?table ["class" => "split"] [ h?tr [] [ h?td [] [ code ]; h?td [] [ preview ] ] ]
 (*
   { Source : list<Reference * Expr>
     Values : Map<Reference, int * Value>
@@ -785,7 +798,7 @@ let view trigger state =
         yield h?a [ "href" => "javascript:;"; "click" =!> fun _ _ -> trigger Forward ] [ text "Forward ->" ] 
     ]
     renderText trigger state
-    renderSheet trigger state 
+    //renderSheet trigger state 
   ]
 
 
@@ -838,7 +851,8 @@ let row headers values =
     member x.Preview _ = renderTable [ for k, v in data -> [k;v] ]
     member x.Lookup m = data |> Seq.pick (fun (k, v) -> if k = m then Some(snd (parse v)) else None) } |> ObjectValue,
   { new ObjectType with
-      member x.Members = [ for k, v in data -> k, fst (parse v) ] } |> ObjectType
+    member x.Refine _ = x
+    member x.Members = [ for k, v in data -> k, fst (parse v) ] } |> ObjectType
 
 let dataArray file = async {
   let! data = downlaod file
@@ -870,6 +884,7 @@ let dataArray file = async {
         } |> ObjectValue
   let rec t = 
     { new ObjectType with
+        member x.Refine _ = x
         member x.Members = 
           let _, _, mt = Array.item 0 rows
           [ yield "at", OperationType(["index", PrimitiveType "number"], mt)
@@ -878,43 +893,66 @@ let dataArray file = async {
             ] } |> ObjectType
   return v rows, t }
 
+let test = 
+  { new ObjectValue with
+      member x.Hash = 123
+      member x.Preview _ = h?p [] [ text "Hi there" ] 
+      member x.Lookup m = if m = "test" then PrimitiveValue(42) else failwith "lookup" } |> ObjectValue,
+  { new ObjectType with
+      member x.Refine v = 
+        printfn "%A" v
+        { new ObjectType with
+            member x.Refine _ = x
+            member x.Members = [ "test", PrimitiveType "number"] }
+      member x.Members = [] } |> ObjectType
+
 let initial = 
   { Completions = None 
     Arguments = None
-    Source = [ Named "avia", External "avia"; Named "rail", External "rail" ]
+    Types = Map.empty
+    Source = [ ]
     Values = Map.empty
     Counter = 0 }
 
 Async.StartImmediate <| async {
-  let! avia = dataArray "data/avia.csv"
-  let! rail = dataArray "data/rail.csv"
-  let ctx = { External = Map.ofList ["avia", avia; "rail", rail] }
-  let prog = []
-  let prog = 
-    [ DefineValue (PrimitiveValue 2500,PrimitiveType "number") 
-      Completions (Named "avia")
-      Complete (Dot (Named "avia","at"))
-      Completions (Indexed 1)
-      Complete (Apply (Indexed 1,"index",Indexed 0))
-      Evaluate (Indexed 2)
-      Completions (Indexed 2)
-      Complete (Dot (Indexed 2,"victim"))
-      DefineValue (PrimitiveValue "KIL",PrimitiveType "string")
-      Completions (Indexed 3)
-      Complete (Dot (Indexed 3,"equals"))
-      Completions (Indexed 5)
-      Complete (Apply (Indexed 5,"other",Indexed 4))
-      Evaluate (Indexed 6)
-      Abstract ([Indexed 2],Indexed 6)    
-      Completions (Named "avia")
-      Complete (Dot (Named "avia","filter"))
-      Completions (Indexed 8)
-      Complete (Apply (Indexed 8,"predicate",Indexed 7))
-    ]
-  let code = prog |> List.fold (apply ctx) initial
-  let state = 
-    { Initial = initial; Code = code; Program = prog; Context = ctx; CurrentFunction = None; Forward = [];
-      CurrentValue = None; CurrentName = None; CurrentReplace = None 
-      CodeState = { SelectedPath = None; HighlightedPath = None } }
-  createVirtualDomApp "out" state view update 
+  try
+    let! avia = dataArray "data/avia.csv"
+    let! rail = dataArray "data/rail.csv"
+    let external = ["avia", avia; "rail", rail; "test", test]
+    let ctx = { External = Map.ofList external }
+    let initial = 
+      { initial with 
+          Source = [ for n, _ in external -> Named n, External n ]
+          Types = Map.ofSeq [ for n, (_, t) in external -> Named n, t ] }
+
+    let prog = []
+    let prog = 
+      [ DefineValue (PrimitiveValue 2500,PrimitiveType "number") 
+        Completions (Named "avia")
+        Complete (Dot (Named "avia","at"))
+        Completions (Indexed 1)
+        Complete (Apply (Indexed 1,"index",Indexed 0))
+        Evaluate (Indexed 2)
+        Completions (Indexed 2)
+        Complete (Dot (Indexed 2,"victim"))
+        DefineValue (PrimitiveValue "KIL",PrimitiveType "string")
+        Completions (Indexed 3)
+        Complete (Dot (Indexed 3,"equals"))
+        Completions (Indexed 5)
+        Complete (Apply (Indexed 5,"other",Indexed 4))
+        Evaluate (Indexed 6)
+        Abstract ([Indexed 2],Indexed 6)    
+        Completions (Named "avia")
+        Complete (Dot (Named "avia","filter"))
+        Completions (Indexed 8)
+        Complete (Apply (Indexed 8,"predicate",Indexed 7))
+      ]
+    let code = prog |> List.fold (apply ctx) initial
+    let state = 
+      { Initial = initial; Code = code; Program = prog; Context = ctx; CurrentFunction = None; Forward = [];
+        CurrentValue = None; CurrentName = None; CurrentReplace = None 
+        CodeState = { SelectedPath = None; HighlightedPath = None } }
+    createVirtualDomApp "out" state view update 
+  with e ->
+    Browser.console.error(e)
 }
