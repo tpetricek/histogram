@@ -779,6 +779,7 @@ let renderText trigger (state:Model) =
       match ctx.State.HighlightedPath, ctx.State.SelectedPath with
       | Some (ref::_), _ 
       | _, Some (ref::_) ->
+          yield h?p [] [ text (sprintf "Highlighted: %A" ref) ]
           match getValue ctx.AllState ref with
           | Some(v) ->
               yield renderPreview "bigpreview" trigger v
@@ -1010,21 +1011,15 @@ Async.StartImmediate <| async {
         Name(Indexed 1, "avia")
         Complete (Dot (Named "avia","at"))
         Complete (Apply (Indexed 2,"index",Indexed 0))
-
-        //Evaluate (Indexed 2)
-        //Completions (Indexed 2)
-        //Complete (Dot (Indexed 2,"victim"))
-        //DefineValue (PrimitiveValue "KIL",PrimitiveType "string")
-        //Completions (Indexed 3)
-        //Complete (Dot (Indexed 3,"equals"))
-        //Completions (Indexed 5)
-        //Complete (Apply (Indexed 5,"other",Indexed 4))
-        //Evaluate (Indexed 6)
-        //Abstract ([Indexed 2],Indexed 6)    
-        //Completions (Named "avia")
-        //Complete (Dot (Named "avia","filter"))
-        //Completions (Indexed 8)
-        //Complete (Apply (Indexed 8,"predicate",Indexed 7))
+        Evaluate (Named "avia")
+        Complete (Dot (Indexed 3,"victim"))
+        DefineValue (PrimitiveValue "KIL",PrimitiveType "string")
+        Complete (Dot (Indexed 4,"equals"))
+        Complete (Apply (Indexed 6,"other",Indexed 5))
+        Evaluate (Indexed 7)
+        Abstract ([Indexed 3],Indexed 7)
+        Complete (Dot (Named "avia","filter"))
+        Complete (Apply (Indexed 9,"predicate",Indexed 8))
       ]
     let code = prog |> List.fold apply initial
     let state = 
