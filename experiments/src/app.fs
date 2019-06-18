@@ -90,14 +90,17 @@ let getMemberValue m v =
   | PrimitiveValue v when m = "or" -> f v (fun a b -> a || b)
   | _ -> failwithf "Cannot access member '%s' of a primitive value" m
 
-let rec typesMatch t1 t2 =
-  match t1, t2 with 
+let rec typeCompatibleWith expected actual =
+  match expected, actual with 
   | ObjectType(o1), ObjectType(o2) ->
-      List.forall2 (fun a1 a2 -> typesMatch (snd a1) (snd a2)) o1.Members o2.Members // TODO: Structural typing for objects
+      // TODO: Structural typing for objects with subtyping (!)
+      let o2members = dict o2.Members
+      o1.Members |> List.forall (fun (n, t) ->
+        o2members.ContainsKey n && typeCompatibleWith t o2members.[n])
   | PrimitiveType t1, PrimitiveType t2 -> t1 = t2
   | OperationType(args1, res1), OperationType(args2, res2) ->
-      typesMatch res1 res2 &&
-      List.forall2 (fun a1 a2 -> typesMatch (snd a1) (snd a2)) args1 args2 
+      typeCompatibleWith res1 res2 &&
+      List.forall2 (fun a1 a2 -> typeCompatibleWith (snd a1) (snd a2)) args1 args2 
   | _ -> false
 
 let rec getInputs code ref = 
@@ -180,7 +183,7 @@ let rec typeCheckExpr code expr =
         | OperationType(expectedArgs, res) ->
             let argTys = [ for a in args -> typeCheck code a ]
             for (_, expected), actual in List.zip expectedArgs argTys do 
-              if not (typesMatch expected actual) then
+              if not (typeCompatibleWith expected actual) then
                 failwithf "Type mismatch (or cannot compare): '%s' and '%s'" (string expected) (string actual)
             res
         | ty -> failwithf "Cannot invoke non-operation typed thing of type: %s" (string ty) 
@@ -210,7 +213,7 @@ let getCompletions code ref =
       let srcTypes = [ for ref, _ in code.Source -> ref, typeCheck code ref ]
       [ for arg, argTy in args do
         for src, srcTy in srcTypes do
-        if typesMatch argTy srcTy then
+        if typeCompatibleWith argTy srcTy then
           yield ParameterCompletion([arg, src]), Apply(ref, arg, src) ]
   | ty ->
       [ for m, _ in getMemberTypes ty -> NamedCompletion m, Dot(ref, m) ]
@@ -283,14 +286,20 @@ let rec apply code interaction =
 
 open Elmish
 open Tbd.Html
+open Tbd.Compost
 open Fable.Core
 open Fable.Import
 open Fable.PowerPack
 
-let renderTable data = 
-  h?table ["class"=>"data"] [
-    for row in data -> h?tr [] [
-      for col in row -> h?td [] [ text (string col) ]
+let renderTable headers data = 
+  h?div ["class"=>"table-container"] [
+    h?table ["class"=>"data"] [
+      yield h?tr [] [
+        for hd in headers -> h?th [] [ text (string hd) ]
+      ]
+      for row in data -> h?tr [] [
+        for col in row -> h?td [] [ text (string col) ]
+      ]
     ]
   ]
 
@@ -672,70 +681,72 @@ let renderSelectableBox ctx (path, ref) extras body =
       ]
   ]
 
-let rec renderReferencedExpression ctx (path, ref) = 
-  match ref, ctx.AllState.CurrentReplace with 
-  | _ when ctx.Variables.ContainsKey ref -> text (ctx.Variables.[ref])
-  | _, Some(r, v) when r = ref ->
-      h?input [ 
-        "input" =!> fun e _ -> ctx.Trigger(UpdateReplace(Some(ref, unbox<Browser.HTMLInputElement>(e).value))) 
-        "value" => v
-        "keydown" =!> fun _ k -> 
-          match int (unbox<Browser.KeyboardEvent>(k).keyCode) with
-          | 13 -> ctx.Trigger(FinishReplace)
-          | 27 -> ctx.Trigger(UpdateReplace None)
-          | _ -> ()
-        ] []
-  | Named n, _ 
-        when collectReferences ctx.Code (find ref ctx.Code) 
-             |> Seq.exists ctx.Variables.ContainsKey |> not -> 
-      renderSelectableBox ctx (path, ref) [] (text n)
-  | r, _ -> renderExpression ctx (path, ref) (find r ctx.Code)
+let rec renderReferencedExpression ctx (path, ref) : _ list = 
+  [ match ref, ctx.AllState.CurrentReplace with 
+    | _ when ctx.Variables.ContainsKey ref -> yield text (ctx.Variables.[ref])
+    | _, Some(r, v) when r = ref ->
+        yield h?input [ 
+          "input" =!> fun e _ -> ctx.Trigger(UpdateReplace(Some(ref, unbox<Browser.HTMLInputElement>(e).value))) 
+          "value" => v
+          "keydown" =!> fun _ k -> 
+            match int (unbox<Browser.KeyboardEvent>(k).keyCode) with
+            | 13 -> ctx.Trigger(FinishReplace)
+            | 27 -> ctx.Trigger(UpdateReplace None)
+            | _ -> ()
+          ] []
+    | Named n, _ 
+          when collectReferences ctx.Code (find ref ctx.Code) 
+               |> Seq.exists ctx.Variables.ContainsKey |> not -> 
+        yield renderSelectableBox ctx (path, ref) [] (text n)
+    | r, _ -> yield! renderExpression ctx (path, ref) (find r ctx.Code) ]
 
-and renderExpression (ctx:RenderContext) (path, ref) expr = 
-  let rsb = renderSelectableBox ctx (path, ref) []
-  let rsbe = renderSelectableBox ctx (path, ref) 
-  match expr with 
-  | External(s) -> text (sprintf "external(%s)" s) |> rsb
-  | Value(PrimitiveValue v, PrimitiveType "string") -> 
-      text (sprintf "\"%s\"" (string v)) |> rsbe [
-        "dblclick" =!> fun _ _ -> ctx.Trigger(UpdateReplace(Some(ref, string v)))
-      ]
-  | Value(PrimitiveValue v, _) -> 
-      text (sprintf "%s" (string v)) |> rsbe [
-        "dblclick" =!> fun _ e -> ctx.Trigger(UpdateReplace(Some(ref, string v)))
-      ]
-  | Value(ObjectValue o, _) -> 
-      text (string o) |> rsb
+and renderExpression (ctx:RenderContext) (path, ref) expr : _ list = 
+  [ let rsb = renderSelectableBox ctx (path, ref) []
+    let rsbe = renderSelectableBox ctx (path, ref) 
+    match expr with 
+    | External(s) -> yield text (sprintf "external(%s)" s) |> rsb
+    | Value(PrimitiveValue v, PrimitiveType "string") -> 
+        yield text (sprintf "\"%s\"" (string v)) |> rsbe [
+          "dblclick" =!> fun _ _ -> ctx.Trigger(UpdateReplace(Some(ref, string v)))
+        ]
+    | Value(PrimitiveValue v, _) -> 
+        yield text (sprintf "%s" (string v)) |> rsbe [
+          "dblclick" =!> fun _ e -> ctx.Trigger(UpdateReplace(Some(ref, string v)))
+        ]
+    | Value(ObjectValue o, _) -> 
+        yield text (string o) |> rsb
 
-  | Value(OperationValue(Some(inputs, output), _), _) -> 
-      let vars = 
-        if inputs.Length = 1 then Seq.zip inputs ["v"] 
-        else Seq.indexed inputs |> Seq.map (fun (i, v) -> v, sprintf "v%d" i) 
-      h?span [] [ 
-        yield text "fun "
-        for _, n in vars -> text (n + " ")
-        yield text "-> "
-        let ctx = { ctx with Variables = Map.ofSeq vars }
-        yield renderExpression ctx (output::path, output) (find output ctx.Code)        
-      ] |> rsb
-  | Value(OperationValue(None, _), _) -> text ("(built-in function)") |> rsb
-  | Member(r, s) -> 
-      h?span [] [ 
-        renderReferencedExpression ctx (r::path, r)
-        text "."
-        text s
-      ] |> rsb
-  | Invocation(r, rs) -> 
-      h?span [] [ 
-        yield renderReferencedExpression ctx (r::path, r)
+    | Value(OperationValue(Some(inputs, output), _), _) -> 
+        let vars = 
+          if inputs.Length = 1 then Seq.zip inputs ["v"] 
+          else Seq.indexed inputs |> Seq.map (fun (i, v) -> v, sprintf "v%d" i) 
         yield h?span [] [ 
+          yield text "fun "
+          for _, n in vars -> text (n + " ")
+          yield text "-> " ] |> rsb
+        let ctx = { ctx with Variables = Map.ofSeq vars }
+        yield! renderExpression ctx (output::path, output) (find output ctx.Code)
+
+    | Value(OperationValue(None, _), _) -> 
+        yield text ("(built-in function)") |> rsb
+    | Member(r, s) -> 
+        yield! renderReferencedExpression ctx (r::path, r)
+        yield text "."
+        yield text s |> rsb
+
+    | Invocation(r, rs) -> 
+        let it = renderReferencedExpression ctx (r::path, r) |> List.rev
+        let last = List.head it
+        let rest = List.rev (List.tail it)
+        yield! rest
+        yield h?span [] [ 
+          yield last
           yield text "("
           for i, r in Seq.indexed rs do
             if i <> 0 then yield text ", "
-            yield renderReferencedExpression ctx (r::path, r)
+            yield! renderReferencedExpression ctx (r::path, r)
           yield text ")"
-        ]
-      ] |> rsb
+        ] |> rsb ]
 
 let renderText trigger (state:Model) = 
   let code = state.Code.Source
@@ -749,18 +760,20 @@ let renderText trigger (state:Model) =
         "mouseout" =!> fun _ e -> e.cancelBubble <- true; trigger (CodeEvent(Highlight(None)))
       ] [
         for ref, _ in code ->
-          h?div [] [
+          h?div ["class" => "indent"] [
             match ref, allRefs.Contains ref with 
             | Named n, _ ->
                 yield h?span [ "class" => "let" ] [ text ("let " + n + " = ") ]
                 //yield renderReferencedExpression ctx ref 
-                yield renderExpression ctx ([ref], ref) (find ref ctx.Code)
+                yield h?div [ "class" => "indent" ] (renderExpression ctx ([ref], ref) (find ref ctx.Code))
+                //yield h?span [ "class" => "indent" ] (renderReferencedExpression ctx ([ref], ref))
+
             | Indexed n, false ->
                 yield h?span [ "class" => "let" ] [ text (sprintf "do[%d]" n) ]
-                yield renderReferencedExpression ctx ([ref], ref) 
+                yield h?div [ "class" => "indent" ] (renderReferencedExpression ctx ([ref], ref))
             | _ -> ()
           ]
-        yield h?div [] [
+        yield h?div [ "class" => "indent" ] [
           yield h?span [ "class" => "let" ] [ text "do" ]
           if state.CurrentValue = None then
             yield h?button [ "class" => "value"; "click" =!> fun _ _ -> trigger(UpdateAddValue (Some "")) ] [ text "add value" ]
@@ -775,7 +788,10 @@ let renderText trigger (state:Model) =
         ]   
       ]
   let preview = 
-    h?div [] [ 
+    h?div [
+      "id" => "preview"
+      "click" =!> fun _ e -> e.cancelBubble <- true
+    ] [ 
       match ctx.State.HighlightedPath, ctx.State.SelectedPath with
       | Some (ref::_), _ 
       | _, Some (ref::_) ->
@@ -801,6 +817,51 @@ let renderText trigger (state:Model) =
   []
 *)
 
+let serializeRef = function
+  | Named n -> box n
+  | Indexed i -> box i
+
+let serialize interaction =
+  let createObj = Fable.Core.JsInterop.createObj
+  let (=>) k v = k, box v
+  match interaction with 
+  | Complete(Dot(ref, mem)) -> createObj [ "kind" => "dot"; "reference" => serializeRef ref; "member" => mem ]
+  | Complete(Apply(op, arg, ref)) -> createObj [ "kind" => "apply"; "operation" => serializeRef op; "arguments" => [| [| box arg; serializeRef ref |] |] ]
+  | Name(ref, name) -> createObj [ "kind" => "name"; "reference" => serializeRef ref; "name" => name ]
+  | Evaluate(ref) -> createObj [ "kind" => "evaluate"; "reference" => serializeRef ref ]
+  | Abstract(args, res) -> createObj [ "kind" => "abstract"; "arguments" => [| for a in args -> serializeRef a |]; "output" => serializeRef res ]
+  | DefineValue(PrimitiveValue v, PrimitiveType typ) -> createObj [ "kind" => "value"; "value" => v; "type" => typ ]
+  | ReplaceValue(ref, PrimitiveValue v, PrimitiveType typ) -> createObj [ "kind" => "replace"; "reference" => serializeRef ref; "value" => v; "type" => typ ]
+  | ReplaceValue _
+  | DefineValue _ -> failwith "Cannot serialize value"
+
+let deserializeRef (o:obj) = match o with :? int as i -> Indexed i | :? string as s -> Named s | _ -> failwith "deserializeRef"
+
+let deserialize obj = 
+  let (?) = JsInterop.(?)
+  match obj?kind with 
+  | "dot" -> Complete(Dot(deserializeRef obj?reference, obj?``member``))
+  | "apply" -> 
+      let args = (obj?arguments : obj[][]).[0]
+      Complete(Apply(deserializeRef obj?operation, unbox args.[0], deserializeRef args.[1] ))
+  | "name" -> Name(deserializeRef obj?reference, obj?name)
+  | "evaluate" -> Evaluate(deserializeRef obj?reference)
+  | "abstract" -> Abstract(List.ofArray(Array.map deserializeRef obj?arguments), deserializeRef obj?output)
+  | "value" -> DefineValue(PrimitiveValue obj?value, PrimitiveType obj?``type``)
+  | "replace" -> ReplaceValue(deserializeRef obj?reference, PrimitiveValue(obj?value), PrimitiveType(obj?``type``))
+  | k -> failwithf "deserialize: Unexpected interaction kind: %s" k
+
+let deserializeProgram json = 
+  let objs = Fable.Import.JS.JSON.parse(json) :?> obj[]
+  [ for interaction in objs -> deserialize interaction ]
+
+let renderSource (state:Model) = 
+  h?pre [] [
+    yield text "[\n"
+    for i in state.Program -> text ("  " + Fable.Import.JS.JSON.stringify(serialize i) + ",\n")
+    yield text "]"
+  ]
+
 let view trigger state =
   //Browser.console.log("PROGRAM")
   //for p in state.Program do Browser.console.log(" * ", string p)
@@ -814,6 +875,7 @@ let view trigger state =
     ]
     renderText trigger state
     //renderSheet trigger state 
+    renderSource state
   ]
 
 
@@ -828,138 +890,101 @@ let download url =
       ignore (v.text().``then``(fun v -> 
         let data = v.Split('\n') |> Array.filter (fun row -> row.Trim() <> "") |> Array.map (fun row -> row.Split(','))
         cont data )))))
-(*
-let load file = 
-  let data = Fetch.fetch file []
-  let mutable result = None
-  let mutable handlers = ResizeArray<_>()
-  let res = data.``then``(fun v -> v.text().``then``(fun v -> 
-    let data = v.Split('\n') |> Array.map (fun row -> row.Split(','))
-    result <- Some data
-    for h in handlers do h () ))
-  { new ObjectValue with 
-      member x.Preview f = 
-        handlers.Add f 
-        match result with 
-        | None -> text "Loading..."
-        | Some data -> renderTable (Seq.truncate 10 data)
-      member x.Lookup _ = failwith "Member not found" } |> ObjectValue
 
-let data = 
-  { new ObjectValue with
-    member x.Preview _ = text "(Dataset)"
-    member x.Lookup m =
-      match m with
-      | "air" -> load "data/avia.csv"
-      | "train" -> load "data/rail.csv"
-      | _ -> failwith "Member not found" } |> ObjectValue,
-  { new ObjectType with
-      member x.Members = ["air", PrimitiveType "unit"; "train", PrimitiveType "unit"] } |> ObjectType
-*)
-
-(*
-let row headers values =
-  let data = List.zip headers values
-  let parse v = match System.Int32.TryParse(v) with true, r -> PrimitiveType "number", PrimitiveValue r | _ -> PrimitiveType "string", PrimitiveValue v
-  { new ObjectValue with
-    member x.Hash = hash values
-    member x.Preview _ = renderTable [ for k, v in data -> [k;v] ]
-    member x.Lookup m = data |> Seq.pick (fun (k, v) -> if k = m then Some(snd (parse v)) else None) } |> ObjectValue,
-  { new ObjectType with
-    member x.Refine _ = x
-    member x.Members = [ for k, v in data -> k, fst (parse v) ] } |> ObjectType
-
-let dataArray file = async {
-  let! data = downlaod file
-  let headers = data.[0] |> List.ofArray
-  let rows = data.[1..] |> Array.map (fun a -> let v, t = row headers (List.ofArray a) in a, v, t)
-  let rec v (rows:(string[] * Value * Type)[]) = 
-    { new ObjectValue with
-      member x.Hash = hash [for _, (ObjectValue r), _ in rows -> r.Hash ]
-      member x.Preview _ = 
-        h?div [] [ 
-          h?p [] [ text (sprintf "Table with %d rows" rows.Length)]
-          renderTable (Seq.truncate 10 [for a, _, _ in rows -> a]) 
-        ]
-      member x.Lookup m = 
-        if m = "at" then OperationValue(None, function  
-          | [PrimitiveValue n] -> 
-              let _, v, _ = (Array.item (unbox n) rows) in v 
-          | _ -> failwith "dataArray.at: Invalid index")
-
-        elif m = "filter" then OperationValue(None, function 
-          | [OperationValue(_, f)] -> 
-              rows |> Array.filter (fun (_, r, _) -> 
-                let res = f [r]
-                //printfn "Filtering (%A): %A" (let (PrimitiveValue b) = res in unbox b = true) r
-                match res with PrimitiveValue(b) -> unbox b = true | _ -> false) |> v
-          | _ -> failwith "dataArray.filter: Invalid predicate")
-        else failwith "dataArray: Member not found"
-        //else fst (Array.item (int m) rows) 
-        } |> ObjectValue
-  let rec t = 
-    { new ObjectType with
-        member x.Refine _ = x
-        member x.Members = 
-          let _, _, mt = Array.item 0 rows
-          [ yield "at", OperationType(["index", PrimitiveType "number"], mt)
-            yield "filter", OperationType(["predicate", OperationType(["row", mt], PrimitiveType "bool")], t)
-            //for i, (_, t) in Seq.indexed rows -> string i, t 
-            ] } |> ObjectType
-  return v rows, t }
-*)
-
-let rowType columns = 
-  { new ObjectType with
-    member x.Refine _ = x
-    member x.Members = 
-      ("lookup",  OperationType(["name", PrimitiveType "string"], PrimitiveType "string")) :: columns } |> ObjectType
-
-let rowValue headers values =
-  let data = List.zip headers values
-  let parse v = match System.Int32.TryParse(v) with true, r -> PrimitiveValue r | _ -> PrimitiveValue v
-  { new ObjectValue with
-    member x.Hash = hash data
-    member x.Preview _ = renderTable [ for k, v in data -> [k;v] ]
-    member x.Lookup m = 
-      if m = "lookup" then OperationValue(None, fun [PrimitiveValue m] -> 
-        data |> Seq.pick (fun (k, v) -> if k = unbox m then Some(PrimitiveValue v) else None))
-      else data |> Seq.pick (fun (k, v) -> if k = m then Some(parse v) else None) } |> ObjectValue
+type RowObjectValue = 
+  inherit ObjectValue
+  abstract Headers : (string * Type)[]
+  abstract Data : string[]
 
 type FrameObjectValue = 
   inherit ObjectValue
-  abstract Headers : (string * Type) list
+  abstract Headers : (string * Type)[]
 
-let frameValue (data:_[]) =
-  let headers = data.[0] |> List.ofArray
+let rec rowType columns = 
+  { new ObjectType with
+    member x.Refine v =
+      match v with
+      | ObjectValue(ov) -> rowType (ov :?> RowObjectValue).Headers
+      | _ -> failwith "rowType: Expected RowObjectValue"
+    member x.Members = 
+      ("lookup",  OperationType(["name", PrimitiveType "string"], PrimitiveType "string")) :: List.ofSeq columns } 
+
+let rowValue headers values =
+  let data = Array.zip headers values
+  let parse v = match System.Int32.TryParse(v) with true, r -> PrimitiveValue r | _ -> PrimitiveValue v
+  let row = 
+    { new RowObjectValue with
+      member x.Hash = hash data
+      member x.Data = values
+      member x.Headers = headers
+      member x.Preview _ = renderTable [ for (k, _), v in data -> k ] [[ for k, v in data -> v ]]
+      member x.Lookup m = 
+        if m = "lookup" then OperationValue(None, fun [PrimitiveValue m] -> 
+          data |> Seq.pick (fun (k, v) -> if k = unbox m then Some(PrimitiveValue v) else None))
+        else data |> Seq.pick (fun ((k, _), v) -> if k = m then Some(parse v) else None) }
+  ObjectValue(row :> ObjectValue)
+
+let sortByType keys resTyp =
+  { new ObjectType with
+      member x.Refine _ = x
+      member x.Members = 
+        [ for k in keys do 
+            yield k + " ascending", resTyp
+            yield k + " descending", resTyp ] } |> ObjectType
+
+let frameValue (data:string[][]) =
   let inferType v = match System.Int32.TryParse(v) with true, _ -> PrimitiveType "number" | _ -> PrimitiveType "string"
-  let rows = data.[1..] |> Array.map (fun a -> a, rowValue headers (List.ofArray a))
+  let headers = Array.map2 (fun h v -> h, inferType v) data.[0] data.[1]
+  let rows = data.[1..] |> Array.map (fun a -> a, rowValue headers a)
   let rec v (rows:(string[] * Value)[]) = 
     let fov = 
       { new FrameObjectValue with
-        member x.Headers = List.zip headers (data.[1] |> List.ofArray |> List.map inferType)
+        member x.Headers = headers
         member x.Hash = hash [for _, (ObjectValue r) in rows -> r.Hash ]
         member x.Preview _ = 
           h?div [] [ 
             h?p [] [ text (sprintf "Table with %d rows" rows.Length)]
-            renderTable (Seq.truncate 10 [for a, _ in rows -> a]) 
+            renderTable [ for k, _ in headers -> k ] (Seq.truncate 200 [for a, _ in rows -> a])
           ]
         member x.Lookup m = 
           if m = "at" then OperationValue(None, function  
             | [PrimitiveValue n] -> snd rows.[unbox n]
             | _ -> failwith "frameValue: Invalid index in 'at'")
 
+          elif m = "sum" then 
+            let headers, data = 
+             [| for colIndex, (colName, colTyp) in Seq.indexed headers do
+                  if colTyp = PrimitiveType "number" then
+                    let safefloat f = try float f with _ -> 0.0
+                    yield (colName, colTyp), string (Seq.sum [ for r, _ in rows -> safefloat (r.[colIndex]) ]) |] |> Array.unzip
+            rowValue headers data
+
           elif m = "filter" then OperationValue(None, function 
             | [OperationValue(_, f)] -> 
                 rows |> Array.filter (fun (_, r) -> 
                   match f [r] with PrimitiveValue(b) -> unbox b = true | _ -> false) |> v
             | _ -> failwith "frameValue.filter: Invalid predicate")
+
+          elif m = "sort by" then 
+            let fov = 
+              { new FrameObjectValue with
+                member y.Headers = x.Headers
+                member y.Hash = x.Hash
+                member y.Preview a = x.Preview a
+                member x.Lookup m = 
+                  let asc = m.EndsWith(" ascending") 
+                  let m = m.Replace(" ascending", "").Replace(" descending", "")
+                  let index = headers |> Array.findIndex (fun (h, _) -> h = m)
+                  let sort = if asc then Array.sortBy else Array.sortByDescending
+                  rows |> sort (fun (data, _) -> data.[index]) |> v }
+            ObjectValue(fov :> ObjectValue)
+
           else failwith "frameValue: Member not found" } 
     ObjectValue(fov :> ObjectValue)
   v rows
 
 let rec frameType columns = 
-  let rt = rowType columns
+  let rt = ObjectType(rowType columns)
   { new ObjectType with
       member x.Refine v =
         match v with
@@ -967,12 +992,14 @@ let rec frameType columns =
         | _ -> failwith "frameType: Expected FrameObjectValue"
       member x.Members = 
         [ yield "at", OperationType(["index", PrimitiveType "number"], rt)
+          yield "sort by", sortByType (Array.map fst columns) (ObjectType(frameType columns))
+          yield "sum", ObjectType(rowType [||])
           yield "filter", OperationType(["predicate", OperationType(["row", rt], PrimitiveType "bool")], ObjectType(frameType columns))
         ] }
 
 let createDataFrame file = async {
   let! data = download file
-  return frameValue data, frameType [] }
+  return frameValue data, frameType [||] }
 
 let data files = async {
   let frames = System.Collections.Generic.Dictionary<_, _>()
@@ -993,10 +1020,57 @@ let data files = async {
       member x.Members = [ for k, _ in files -> k, ObjectType(snd frames.[k]) ] } |> ObjectType 
   return value, typ }
 
+let rec barChartType = 
+  { new ObjectType with 
+    member x.Refine _ = x
+    member x.Members = ["add series", OperationType(["data", ObjectType(rowType [||])], barChartType) ] } |> ObjectType
+
+let rec barChartValue (rows:RowObjectValue list) =
+  { new ObjectValue with 
+    member x.Hash = 0
+    member x.Preview _ = 
+      let colors = Seq.initInfinite (fun _ -> 
+        [ "#1f77b4"; "#ff7f0e"; "#2ca02c"; "#d62728"; "#9467bd"; 
+          "#8c564b"; "#e377c2"; "#7f7f7f"; "#bcbd22"; "#17becf"; ]) |> Seq.concat      
+      
+      let headers = (List.head rows).Headers |> Array.map fst
+      let headers = List.tail rows |> List.fold (fun headers row -> 
+        headers |> Array.filter (fun h -> row.Headers |> Array.exists (fun (h2, _) -> h = h2))) headers
+      let lookups = rows |> List.map (fun row -> dict (Seq.zip (Array.map fst row.Headers) row.Data)  )
+
+      let viz = 
+        Shape.Layered [
+          for h in headers do
+          for clr, (n, v) in Seq.zip colors (Seq.indexed lookups) do
+          let n, v = sprintf "%s (%d)" h n, float v.[h]
+          let bar n = Shape.Padding((2., 0., 2., 1.), Derived.Bar(CO v, CA n))
+          yield Shape.Style((fun s -> { s with Fill = Solid(1.0, HTML clr) }), bar n)
+        ]
+      let viz = Shape.Axes(false, false, true, true, viz)
+      Compost.createSvg false false (500., 500.) viz
+    member x.Lookup n = 
+      if n = "add series" then OperationValue(None, fun [ObjectValue row] ->        
+        barChartValue [ yield! rows; yield row :?> RowObjectValue])
+      else
+        failwithf "chart: member %s does not exist" n } |> ObjectValue
+
+let chart = 
+  { new ObjectValue with 
+    member x.Hash = 0
+    member x.Preview _ = h?div [] []
+    member x.Lookup m = 
+      if m = "bar" then OperationValue(None, fun [ObjectValue row] ->        
+        barChartValue [row :?> RowObjectValue])
+      else
+        failwithf "chart: member %s does not exist" m } |> ObjectValue,
+  { new ObjectType with 
+    member x.Refine _ = x
+    member x.Members = ["bar", OperationType(["data", ObjectType(rowType [||])], barChartType) ] } |> ObjectType
+
 Async.StartImmediate <| async {
   try
     let! data = data [ "aviation", "data/avia.csv"; "rail", "data/rail.csv" ]
-    let external = [ "data", data ]
+    let external = [ "data", data; "chart", chart ]
     let initial = 
       { Arguments = None
         External = Map.ofList external
@@ -1005,7 +1079,75 @@ Async.StartImmediate <| async {
         Source = [ for n, _ in external -> Named n, External n ] }
 
     let prog = []
-    let prog = 
+    let prog = deserializeProgram """
+      [ {"kind":"value","value":2500,"type":"number"},
+        {"kind":"dot","reference":"data","member":"aviation"},
+        {"kind":"name","reference":1,"name":"avia"},
+        {"kind":"dot","reference":"avia","member":"at"},
+        {"kind":"apply","operation":2,"arguments":[["index",0]]},
+        {"kind":"evaluate","reference":"avia"},
+        {"kind":"dot","reference":3,"member":"victim"},
+        {"kind":"value","value":"KIL","type":"string"},
+        {"kind":"dot","reference":4,"member":"equals"},
+        {"kind":"apply","operation":6,"arguments":[["other",5]]},
+        {"kind":"evaluate","reference":7},
+        {"kind":"abstract","arguments":[3],"output":7},
+        {"kind":"dot","reference":"avia","member":"filter"},
+        {"kind":"apply","operation":9,"arguments":[["predicate",8]]},
+        {"kind":"dot","reference":7,"member":"and"},
+        {"kind":"dot","reference":3,"member":"geo"},
+        {"kind":"dot","reference":12,"member":"not equals"},
+        {"kind":"value","value":"EU28","type":"string"},
+        {"kind":"apply","operation":13,"arguments":[["other",14]]},
+        {"kind":"apply","operation":11,"arguments":[["other",15]]},
+        {"kind":"abstract","arguments":[3],"output":16},
+        {"kind":"apply","operation":9,"arguments":[["predicate",17]]},
+        {"kind":"evaluate","reference":18},
+        {"kind":"dot","reference":"data","member":"rail"},
+        {"kind":"evaluate","reference":19},
+        {"kind":"dot","reference":19,"member":"at"},
+        {"kind":"apply","operation":20,"arguments":[["index",0]]},
+        {"kind":"evaluate","reference":21},
+        {"kind":"dot","reference":21,"member":"victim"},
+        {"kind":"dot","reference":22,"member":"equals"},
+        {"kind":"apply","operation":23,"arguments":[["other",5]]},
+        {"kind":"dot","reference":24,"member":"and"},
+        {"kind":"dot","reference":21,"member":"accident"},
+        {"kind":"evaluate","reference":26},
+        {"kind":"value","value":"TOTAL","type":"string"},
+        {"kind":"dot","reference":26,"member":"equals"},
+        {"kind":"apply","operation":28,"arguments":[["other",27]]},
+        {"kind":"apply","operation":25,"arguments":[["other",29]]},
+        {"kind":"name","reference":19,"name":"rail"},
+        {"kind":"dot","reference":21,"member":"pers_inv"},
+        {"kind":"dot","reference":31,"member":"equals"},
+        {"kind":"apply","operation":32,"arguments":[["other",27]]},
+        {"kind":"dot","reference":30,"member":"and"},
+        {"kind":"apply","operation":34,"arguments":[["other",33]]},
+        {"kind":"dot","reference":21,"member":"geo"},
+        {"kind":"dot","reference":36,"member":"not equals"},
+        {"kind":"apply","operation":37,"arguments":[["other",14]]},
+        {"kind":"dot","reference":35,"member":"and"},
+        {"kind":"apply","operation":39,"arguments":[["other",38]]},
+        {"kind":"abstract","arguments":[21],"output":40},
+        {"kind":"dot","reference":"rail","member":"filter"},
+        {"kind":"apply","operation":42,"arguments":[["predicate",41]]},
+        {"kind":"evaluate","reference":43},
+        {"kind":"dot","reference":18,"member":"sum"},
+        {"kind":"dot","reference":43,"member":"sum"},
+        {"kind":"evaluate","reference":44},
+        {"kind":"evaluate","reference":45},
+        {"kind":"name","reference":45,"name":"rail sums"},
+        {"kind":"name","reference":44,"name":"avia sums"},
+        {"kind":"dot","reference":"chart","member":"bar"},
+        {"kind":"apply","operation":46,"arguments":[["data","avia sums"]]},
+        {"kind":"evaluate","reference":47},
+        {"kind":"apply","operation":46,"arguments":[["data","rail sums"]]},
+        {"kind":"evaluate","reference":48},
+        {"kind":"dot","reference":47,"member":"add series"},
+        {"kind":"apply","operation":49,"arguments":[["data","rail sums"]]},
+        {"kind":"evaluate","reference":50} ]"""
+    let _prog = 
       [ DefineValue (PrimitiveValue 2500,PrimitiveType "number") 
         Complete (Dot (Named "data","aviation"))
         Name(Indexed 1, "avia")

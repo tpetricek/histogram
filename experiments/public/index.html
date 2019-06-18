@@ -12,32 +12,45 @@
     .cell { border:solid 1px black; background:#f8f8f8; padding:5px; }
     .cell-col { background:#e8e8e8; }
     table.data { border-spacing:0px; }
-    table.data td { padding:0px 3px 0px 3px; font-size:0.8em; }
+    table.data td, table.data th { padding:0px 5px 0px 5px; font-size:0.8em; }
     table.data tr:first-child { background:#e0e0e0; }
-    table.data tr:nth-child(2n) { background:#e8e8e8; }
+    table.data tr { background:#e8e8e8; }
+    table.data tr:nth-child(2n) { background:#ffffff; }
+    .table-container { max-height:200px; overflow-y:auto; }
     .preview { overflow:auto; max-width:400px; max-height:300px; }
 
     table.split {
       width: 100%;
+      table-layout: fixed;
     }
     table.split td {
       width:50%;
+      max-width:50%;
+      overflow:hidden;
     }
+    table.split td #preview {
+      position:fixed;
+    }
+
     span.expr {
       border:solid 1px #a0a0a0;
-      padding:3px 5px 3px 5px;
+      padding:2px 5px 2px 5px;
       display: inline-block;
       border-radius: 4px;
-      margin:0px 2px 0px 2px;
+      margin:2px 2px 2px 2px;
       cursor:pointer;
     }
 
     div.code div.completions {
       position: absolute;
+      max-height: 400px;
+      overflow-y: auto;
+      overflow-x:hidden;
+      padding:0px 20px 0px 10px;
       border-radius:4px;
       border:solid 1px #a0a0a0;
       background: #f0f0f0;
-      min-width: 80px;
+      min-width: 160px;
       padding:2px;
     }
     div.code div.completions a {
@@ -59,8 +72,7 @@
     }
     div.code {
       margin:30px 0px 30px 0px;
-      padding-left:10px;
-      font: 300 11pt 'Roboto Mono',monospace;
+      font: 300 10pt 'Roboto Mono',monospace;
     }
     div.code button.plus {
       border-radius: 4px;
@@ -90,8 +102,17 @@
       background: #FFF2BA;
     }
     span.let {
-      margin: 10px 0px 0px -10px;
+      margin-top:10px;
       display: block;
+    }
+    .indent {
+      padding-left:20px;
+    }
+    .indent span {
+      margin-left:0px;
+    }
+    .indent > :first-child {
+      margin-left:-20px;
     }
   </style>
 </head>

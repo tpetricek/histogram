@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="html.fs" />
+    <Compile Include="compost.fs" />
     <Compile Include="app.fs" />
   </ItemGroup>
   <ItemGroup>
