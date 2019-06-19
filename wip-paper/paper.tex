@@ -1,0 +1,176 @@
+\documentclass[manuscript,acmsmall,fleqn]{acmart}\settopmatter{printfolios=false,printccs=false,printacmref=false}
+
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
+
+\acmJournal{PACMPL}
+\acmVolume{1}
+\acmNumber{Author's draft}
+\acmArticle{1}
+\acmYear{2019}
+\acmMonth{1}
+\acmDOI{}
+\startPage{1}
+
+\setcopyright{none}
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}
+
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{lineno,hyperref,xcolor}
+\usepackage{flushend}
+\usepackage{stmaryrd}
+\usepackage{amssymb}
+\usepackage{xypic}
+\usepackage{semantic}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{enumerate}
+\usepackage{amsmath}
+\usepackage[T1]{fontenc}
+
+\setlist{leftmargin=6mm}
+\newcounter{thc}
+\newcounter{dfc}
+
+\theoremstyle{plain}
+\newtheorem{lem}[thc]{Lemma}
+\newtheorem{theorem}[thc]{Theorem}
+
+\theoremstyle{definition}
+\newtheorem{axiom}[dfc]{Axiom}
+\newtheorem{definition}[dfc]{Definition}
+
+\title{\textsc{Histola}: Rethinking programs as series of interactions}
+\author{Tomas Petricek}
+\affiliation{
+  \institution{University of Kent}
+  \country{United Kingdom}
+}
+\email{tomas@tomasp.net}
+\makeatletter
+\let\@authorsaddresses\@empty
+\makeatother
+
+\definecolor{cmtclr}{rgb}{0.0,0.6,0.0}
+\definecolor{kvdclr}{rgb}{0.0,0.0,0.6}
+\definecolor{idclr}{rgb}{0.0,0.0,0.0}
+\definecolor{numclr}{rgb}{0.0,0.4,0.0}
+\definecolor{strclr}{rgb}{0.4,0.4,0.0}
+\definecolor{rstrclr}{rgb}{0.5,0.1,0.0}
+\definecolor{prepclr}{rgb}{0.6,0.0,0.2}
+\newcommand{\vect}[1]{\langl #1 \rangl}
+\newcommand{\langl}{\begin{picture}(4.5,7)
+\put(1.1,2.5){\rotatebox{60}{\line(1,0){5.5}}}
+\put(1.1,2.5){\rotatebox{300}{\line(1,0){5.5}}}
+\end{picture}}
+\newcommand{\rangl}{\begin{picture}(4.5,7)
+\put(.9,2.5){\rotatebox{120}{\line(1,0){5.5}}}
+\put(.9,2.5){\rotatebox{240}{\line(1,0){5.5}}}
+\end{picture}}
+\newcommand{\ball}[1]{\FPeval{\result}{clip(201+#1)}\textnormal{\ding{\result}}}
+\newcommand{\lsep}{\;\;|\;\;}
+\newcommand{\num}[1]{\textcolor{numclr}{#1}}
+\newcommand{\str}[1]{\textnormal{\textcolor{strclr}{\sffamily "#1"}}}
+\newcommand{\strf}[1]{\textnormal{\textcolor{strclr}{\sffamily #1}}}
+\newcommand{\rstr}[1]{\textnormal{\textcolor{rstrclr}{\sffamily "#1"}}}
+\newcommand{\ident}[1]{\textnormal{\textcolor{idclr}{\sffamily #1}}}
+\newcommand{\qident}[1]{\textnormal{\sffamily \textquotesingle #1\textquotesingle}}
+\newcommand{\dom}{\ident{dom}}
+\newcommand{\kvd}[1]{\textnormal{\textcolor{kvdclr}{\sffamily #1}}}
+
+\newcommand{\bndclr}[1]{\textcolor{kvdclr}{#1}}
+\newcommand{\bkndclr}[1]{\textcolor{prepclr}{#1}}
+\newcommand{\blblclr}[1]{\textcolor{numclr}{#1}}
+\newcommand{\bnd}[1]{\textnormal{\textcolor{kvdclr}{\sffamily #1}}}
+\newcommand{\bknd}[1]{\textnormal{\textcolor{prepclr}{\sffamily #1}}}
+\newcommand{\blbl}[1]{\textnormal{\textcolor{numclr}{\sffamily #1}}}
+\newcommand{\narrow}[1]{\hspace{-0.6em}#1\hspace{-0.6em}}
+\newcommand{\rname}[1]{{\sffamily\small(#1)}}
+\newcommand{\ername}[1]{\vspace{0.75em}\rname{#1}\hspace{0.5em}}
+\newcommand{\preview}[1]{\,\textnormal{\guillemotleft} #1\textnormal{\guillemotright}\,}
+
+\begin{document}
+\begin{abstract}
+  xx
+\end{abstract}
+\maketitle
+
+% ==================================================================================================
+
+\section{Introduction}
+given an expression $e$ is the greatest lie in programming language research!
+
+\section{Idea}
+
+represent program as list of interactions
+
+
+\section{Consequences: Type system}
+\subsection{Well constructed means well typed}
+\subsection{Dependent types}
+
+\section{Consequences: Usability}
+\subsection{Refactoring}
+\subsection{Dual view}
+
+~
+\newpage
+
+\section{Formalism}
+
+\begin{equation*}
+\begin{array}{rcl}
+\iota &=& \kvd{def}~v~\kvd{as}~r'\\
+      &|& \kvd{dot}~r, n~\kvd{as}~r'\\
+      &|& \kvd{abstract}~(r_1, \ldots, r_k), r~\kvd{as}~r'\\
+      &|& \kvd{apply}~r, (r_1, \ldots, r_k)~\kvd{as}~r'\\
+      &|& \kvd{eval}~r\\[0.5em]
+p     &=& \iota_1, \ldots, \iota_k
+\end{array}
+\end{equation*}
+
+state
+\begin{equation*}
+\begin{array}{rcl}
+v &=& o \lsep (r_1,\ldots,r_n)\rightarrow r\\
+e &=& v \lsep r.n \lsep r(r_1, \ldots, r_k)\\[0.5em]
+s &=& (E, V)~\textnormal{where}~E=\{r_1\mapsto e_1, \ldots, r_k \mapsto e_k\ \}, V=\{r_1\mapsto v_1, \ldots, r_l \mapsto v_l\}
+\end{array}
+\end{equation*}
+
+evaluation
+assume we have $o.m \rightsquigarrow v$
+
+\begin{equation*}
+\begin{array}{ll}
+\kvd{apply}~(\kvd{def}~v~\kvd{as}~r')~(E, V) = (E \cup \{r' \mapsto v\}, V) &(1)\\[0.1em]
+\kvd{apply}~(\kvd{dot}~r, n~\kvd{as}~r')~(E, V) = (E \cup \{r' \mapsto r.n \}, V) &(2)\\[0.1em]
+\kvd{apply}~(\kvd{abstract}~(r_1, \ldots, r_k), r~\kvd{as}~r')~(E, V) = (E \cup \{r' \mapsto (r_1, \ldots, r_k) \rightarrow r \}, V)&(3)\\[0.1em]
+\kvd{apply}~(\kvd{apply}~r, (r_1, \ldots, r_k)~\kvd{as}~r')~(E, V) = (E \cup \{r' \mapsto r(r_1, \ldots, r_k) \}, V)&(4)\\[0.1em]
+\kvd{apply}~(\kvd{eval}~r)~(E, V) = (E, V \cup \{ r \mapsto v \} )~\textnormal{where}~(r\mapsto v) \in E&(5)
+\\[0.5em]
+\kvd{apply}~(\kvd{eval}~r)~(E, V) = (E, V \cup \{ r \mapsto v \} )&(6)\\
+\qquad \textnormal{where}~(r\mapsto r_0.n)\in E\\
+\hspace{4.8em} (E', V') = \kvd{apply}~(\kvd{eval}~r_0)~(E, V)\\
+\hspace{4.8em} (r\mapsto o) \in V'\\
+\hspace{4.8em} o.m \rightsquigarrow v
+\\[0.5em]
+\kvd{apply}~(\kvd{eval}~r)~(E, V) = (E, V \cup \{ r \mapsto v \} )&(7)\\
+\qquad \textnormal{where}~(r\mapsto r_0(r_1,\ldots, r_k)) \in E\\
+\hspace{4.8em} (E', V') = \kvd{apply}^{*}~(\kvd{eval}~r_0, \ldots, \kvd{eval}~r_k)~(E, V)\\
+\hspace{4.8em} (r_0 \mapsto (r'_1, \ldots, r'_k) \rightarrow r') \in V'\\
+\hspace{4.8em} (r_1 \mapsto v_1) \in V', \ldots, (r_k \mapsto v_k) \in V'\\
+\hspace{4.8em} (E'', V'') = \kvd{apply}^{*}~(\kvd{def}~v_1~\kvd{as}~r'_1, \ldots, \kvd{def}~v_k~\kvd{as}~r'_k, \kvd{eval}~r')~(E, V)\\
+\hspace{4.8em} (r' \mapsto v) \in V''
+\end{array}
+\end{equation*}
+
+getting completions judgements
+
+
+
+% ==================================================================================================
+\end{document}

@@ -2,3 +2,8 @@ packages
 node_modules
 obj
 .vs
+*.aux
+.fake
+paket.exe
+paket-files
+*.log
