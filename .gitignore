@@ -7,3 +7,4 @@ obj
 paket.exe
 paket-files
 *.log
+.ionide

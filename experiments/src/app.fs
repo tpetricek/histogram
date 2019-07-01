@@ -1067,6 +1067,29 @@ let chart =
     member x.Refine _ = x
     member x.Members = ["bar", OperationType(["data", ObjectType(rowType [||])], barChartType) ] } |> ObjectType
 
+
+let createScrolly id stepHeight stepCount trigger = 
+  let s = Browser.document.getElementById(id)
+  let sb = Browser.document.getElementById(id + "-body")
+  let hgt = Browser.window.innerHeight + stepHeight * stepCount
+  s.style.height <- (string hgt) + "px"
+
+  Browser.window.onscroll <- fun e -> 
+    if Browser.window.scrollY < s.offsetTop then
+      sb.style.position <- "relative"
+      sb.style.top <- "0px"
+    elif Browser.window.scrollY > s.offsetTop + (stepHeight * stepCount) then
+      sb.style.position <- "relative"
+      sb.style.top <- string (stepHeight * stepCount) + "px"
+    else
+      let step = int ((Browser.window.scrollY - s.offsetTop) / stepHeight)
+      trigger step
+      sb.style.position <- "fixed"
+      sb.style.top <- "0px"
+      sb.style.width <- "100vw"
+      sb.style.height <- (string Browser.window.innerHeight) + "px"
+
+
 Async.StartImmediate <| async {
   try
     let! data = data [ "aviation", "data/avia.csv"; "rail", "data/rail.csv" ]
@@ -1163,12 +1186,29 @@ Async.StartImmediate <| async {
         Complete (Dot (Named "avia","filter"))
         Complete (Apply (Indexed 9,"predicate",Indexed 8))
       ]
-    let code = prog |> List.fold apply initial
-    let state = 
-      { Initial = initial; Code = code; Program = prog; CurrentFunction = None; Forward = [];
+    //let code = prog |> List.fold apply initial
+    
+    let initial = 
+      { Initial = initial; Code = initial; Program = []; CurrentFunction = None; Forward = [];
         CurrentValue = None; CurrentName = None; CurrentReplace = None; CurrentCompletions = None
         CodeState = { SelectedPath = None; HighlightedPath = None } }
-    createVirtualDomApp "out" state view update 
+    let setState = createVirtualDomApp "out" initial view update 
+    
+    let cache = System.Collections.Generic.Dictionary<_, _>()
+    cache.[0] <- initial
+
+    let prog = prog |> Array.ofSeq
+    let events = prog |> Array.map Interact
+
+    createScrolly "scrolly1" 100. (float events.Length) (fun i -> 
+      let lastComputed = [i .. -1 .. 0] |> Seq.find (fun i -> printfn "checking %d: %b" i (cache.ContainsKey i); cache.ContainsKey i)
+      for i in lastComputed+1 .. i do
+        cache.[i] <- update cache.[i-1] events.[i-1]
+        // cache[1] = update cache[0] events[0]
+      setState cache.[i]
+    )
   with e ->
     Browser.console.error(e)
 }
+
+printfn "%A" (List.find (fun i -> i = 0) [1;2;3;4;5;6;7;0] )

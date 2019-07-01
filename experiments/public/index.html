@@ -1,124 +1,170 @@
 ﻿<!doctype html>
-<html>
+<html lang="en">
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>  
-  <link href="https://fonts.googleapis.com/css?family=Titillium+Web:300,400,600,700|Roboto+Mono:300,400" rel="stylesheet">
-  <style type="text/css">
-    body { font-family:'Titillium Web', sans-serif; padding:20px 20px 200px 20px; }
-    td { vertical-align:top; }
-    table.sheet { border-spacing:4px; border-collapse:separate; }
-    table.sheet, tr, td { padding:0px; margin:0px; border-style:none; border-width:0px; }
-    table.sheet tr { background:#f0f0f0; }
-    .cell { border:solid 1px black; background:#f8f8f8; padding:5px; }
-    .cell-col { background:#e8e8e8; }
-    table.data { border-spacing:0px; }
-    table.data td, table.data th { padding:0px 5px 0px 5px; font-size:0.8em; }
-    table.data tr:first-child { background:#e0e0e0; }
-    table.data tr { background:#e8e8e8; }
-    table.data tr:nth-child(2n) { background:#ffffff; }
-    .table-container { max-height:200px; overflow-y:auto; }
-    .preview { overflow:auto; max-width:400px; max-height:300px; }
-
-    table.split {
-      width: 100%;
-      table-layout: fixed;
-    }
-    table.split td {
-      width:50%;
-      max-width:50%;
-      overflow:hidden;
-    }
-    table.split td #preview {
-      position:fixed;
-    }
-
-    span.expr {
-      border:solid 1px #a0a0a0;
-      padding:2px 5px 2px 5px;
-      display: inline-block;
-      border-radius: 4px;
-      margin:2px 2px 2px 2px;
-      cursor:pointer;
-    }
-
-    div.code div.completions {
-      position: absolute;
-      max-height: 400px;
-      overflow-y: auto;
-      overflow-x:hidden;
-      padding:0px 20px 0px 10px;
-      border-radius:4px;
-      border:solid 1px #a0a0a0;
-      background: #f0f0f0;
-      min-width: 160px;
-      padding:2px;
-    }
-    div.code div.completions a {
-      display:block;
-      color:black;
-      width:100%;
-      margin:1px 5px 1px 5px;
-      text-align:left;
-      font-family:'Titillium Web';
-      text-decoration:none;
-    }
-    div.code div.completions hr {
-      border-style:none;
-      border-top:solid 1px #a0a0a0;
-      margin:0px;
-    }
-    div.code div.completions a:hover {
-      font-weight: bold;
-    }
-    div.code {
-      margin:30px 0px 30px 0px;
-      font: 300 10pt 'Roboto Mono',monospace;
-    }
-    div.code button.plus {
-      border-radius: 4px;
-      border-width: 0px;
-      padding:5px;
-      background: #D8B100;
-    }
-    div.code button.value {
-      border-radius: 4px;
-      border-width: 0px;
-      padding:7px 12px 7px 12px;
-      border:solid 1px #a0a0a0;
-      background: #f0f0f0;
-      font: 300 9pt 'Roboto Mono',monospace;
-    }
-    div.code input {
-      max-width:60px; 
-      font: 300 10pt 'Roboto Mono',monospace;
-      border-radius: 3px;
-      border:solid 1px #a0a0a0;
-      padding:2px;
-    }
-    span.selected {
-      background: #EAD577;
-    }
-    span.highlighted {
-      background: #FFF2BA;
-    }
-    span.let {
-      margin-top:10px;
-      display: block;
-    }
-    .indent {
-      padding-left:20px;
-    }
-    .indent span {
-      margin-left:0px;
-    }
-    .indent > :first-child {
-      margin-left:-20px;
-    }
-  </style>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" 
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">  
+  <link href="https://fonts.googleapis.com/css?family=Kreon:300,400,700|PT+Sans:400,400i,700|Roboto+Mono:300,400&display=swap" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
 </head>
 <body>
-  <div id="out">
+  <header>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12 col-md-9">
+        <h1><strong>Histogram:</strong> You have to know the past to help developers in the present</h1>
+        <p class="author"><strong>Tomas Petricek</strong>, University of Kent<br /><a href="http://twitter.com/tomaspetricek">@tomaspetricek</a> | <a href="mailto:tomas@tomasp.net">tomas@tomasp.net</a></p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-12 col-md-9 col-lg-8">
+      <p>Programs are created through a variety of interactions. A programmer might write some code,
+        execute it to check whether it works, use copy and paste, apply a refactoring or choose 
+        an item from an auto-complete list offered by their editor. Programming research often 
+        forgets about these. We represent programs as text that results from these. Consequently,
+        thinking about such interactionsis out of scope of our work. This essay shows
+        how to shift our focus from <em>programs</em> to a more interesting question of 
+        <em>programming</em>.</p>
+        
+      <p>We represent programs as <em>lists of interactions</em> such as triggering an 
+        auto-complete on a value, choosing an option, entering a value, defining a variable
+        or evaluating a piece of code. We aim to make programming easier by favoring interactions
+        such as choosing from a list over interactions such as typing an arbitrary function call.
+        We explore a number of consequences of thinking about programs as lists of interactions.</p>
+      <ul>
+        <li>If we know that a function was a result of refactoring, we can make it easy to deubug it. </li>
+        <li>If we know that some code was interactively executed in the past, we can give developers more
+          precise hints in auto-completion lists. </li>
+        <li>Moving away from text representation lets us visualize the same program in a traditional
+          text format, but also in a format akin to spreadsheets.</li>
+        <li>Having interaction as a first class value....</li>
+      </ul>
+      <p>
+
+        knowing that a function was constructed using a refactoring lets us offer more help to 
+        developers; knowing that some code was previously executed lets us 
+
+        knowing that a function was constructed using a refactoring lets us provide better debugging tools;
+
+      </p>
+        
+        
+        <p>Context: What is the broad context of the work? What is the importance of the general research area?</p>
+        <p>Inquiry: What problem or question does the paper address? How has this problem or question been addressed by others (if at all)?</p>
+        <p>Approach: What was done that unveiled new knowledge?</p>
+        <p>Knowledge: What new facts were uncovered? If the research was not results oriented, what new capabilities are enabled by the work?</p>
+        <p>Grounding: What argument, feasibility proof, artifacts, or results and evaluation support this work?</p>
+        <p>Importance: Why does this work matter?</p>
+      </div>
+    </div>
   </div>
+  </header>
+  <article>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12 col-md-9 col-lg-8">
+        <h2>Introduction</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h2>Introduction</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h3>Some basic demo</h3>
+        <p>Evaluate, access a row attribute?
+
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h3>Programming through values</h3>
+        <p>Turn the above into a function and still be able to evaluate the body!
+
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h2>User interface fun</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h3>Multiple views</h3>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h3>Binding actions to UI elements</h3>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        <h2>Type system</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h3>Dependent types</h3>
+        <p>Well constructed programs are well typed.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h3>Dependent types</h3>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo" id="scrolly1"><div id="scrolly1-body">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12">
+        <div id="out">
+        </div>
+      </div>
+    </div>
+  </div>   
+  </div></div>
+
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-12 col-md-9 col-lg-8">
+        <h2>More stuff</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h2>More stuff</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h2>More stuff</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h2>More stuff</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <h2>More stuff</h2>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+        </p>
+
+      </div>
+    </div>
+  </div>
+  </article>
+
+
   <script src="bundle.js"></script>
 </body>
 </html>

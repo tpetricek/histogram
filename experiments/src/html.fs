@@ -230,15 +230,16 @@ let createVirtualDomApp id initial r u =
   let mutable tree = Fable.Core.JsInterop.createObj []
   let mutable state = initial
 
-  let handleEvent evt = 
-    state <- match evt with Some e -> u state e | _ -> state
+  let setState newState = 
+    state <- newState
     let newTree = r trigger state |> renderVirtual
     let patches = Virtualdom.diff tree newTree
     container <- Virtualdom.patch container patches
     tree <- newTree
   
-  handleEvent None
-  event.Publish.Add(Some >> handleEvent)
+  setState initial
+  event.Publish.Add(u state >> setState)
+  setState
   
 let text s = Text(s)
 let (=>) k v = k, Attribute(v)
