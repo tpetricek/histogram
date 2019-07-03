@@ -94,3 +94,10 @@ let rail =
 
 avia.SaveCsv("clean/avia.csv")
 rail.SaveCsv("clean/rail.csv")
+
+// Save semi-cleaned version of aviation data for each year as separate CSV file
+let df = avia.Columns.[["unit";"victim";"c_regis";"geo"]]
+for year in 1990 .. 2017 do
+  let y = avia.GetColumn<int>(string year)
+  let df = df |> Frame.addCol "value" y
+  df.SaveCsv(sprintf "clean/avia%d.csv" year)

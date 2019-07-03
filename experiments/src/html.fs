@@ -206,20 +206,26 @@ let createVirtualDomAsyncApp id initial r u =
   document.getElementById(id).appendChild(container) |> ignore
   let mutable tree = Fable.Core.JsInterop.createObj []
   let mutable state = initial
+  let events = ResizeArray<_>()
 
-  let handleEvent evt = Async.StartImmediate <| async {
-    match evt with 
-    | Some e -> 
-        let! ns = u state e 
-        state <- ns
-    | _ -> ()
-    let newTree = r trigger state |> renderVirtual
+  let setState newState = 
+    state <- newState
+    let newTree = r (events :> seq<_>) trigger state |> renderVirtual
     let patches = Virtualdom.diff tree newTree
     container <- Virtualdom.patch container patches
-    tree <- newTree }
+    tree <- newTree 
   
-  handleEvent None
-  event.Publish.Add(Some >> handleEvent)
+  setState initial
+  event.Publish.Add(fun e -> Async.StartImmediate <| async { 
+    try
+      events.Add(e)
+      let! s = u state e
+      setState s 
+    with e ->
+      Fable.Import.Browser.console.error(e)
+    })
+  setState
+
 
 let createVirtualDomApp id initial r u = 
   let event = new Event<'T>()

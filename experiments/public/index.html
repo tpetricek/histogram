@@ -2,87 +2,274 @@
 <html lang="en">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>  
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" 
-    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">  
+  <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
   <link href="https://fonts.googleapis.com/css?family=Kreon:300,400,700|PT+Sans:400,400i,700|Roboto+Mono:300,400&display=swap" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
 </head>
 <body>
-  <header>
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12 col-md-9">
-        <h1><strong>Histogram:</strong> You have to know the past to help developers in the present</h1>
-        <p class="author"><strong>Tomas Petricek</strong>, University of Kent<br /><a href="http://twitter.com/tomaspetricek">@tomaspetricek</a> | <a href="mailto:tomas@tomasp.net">tomas@tomasp.net</a></p>
-      </div>
+<header>
+<div class="container">
+  <div class="row"><div class="col-sm-12 col-md-10 col-lg-7">
+
+    <h1><strong>Hist<span style="position:relative;top:4px;margin:0px 2px 0px 2px;">&bull;</span>gram:</strong>
+      You have to know the past to understand the present</h1>
+
+  </div></div>
+  <div class="row"><div class="col-sm-12 col-lg-9 col-xl-8">
+
+    <p class="author"><strong>Tomas Petricek</strong>, University of Kent<br />
+      <a href="http://twitter.com/tomaspetricek">@tomaspetricek</a> |
+      <a href="mailto:tomas@tomasp.net">tomas@tomasp.net</a></p>
+
+    <p>Programs are created through a variety of interactions. A programmer might write some
+      code, run it interactively to check whether it works, use copy and paste, apply a
+      refactoring or choose an item from an auto-complete list. Programming research often
+      forgets about these and represents programs as the resulting text. Consequently,
+      thinking about such interactions is often out of scope. This essay shift focus from
+      <em>programs</em> to a more interesting question of <em>programming</em>.</p>
+
+    <p>We represent programs as <em>lists of interactions</em> such as triggering an
+      auto-complete and choosing an option, declaring a value, introducing a variable
+      or evaluating a piece of code. We explore a number of consequences of thinking about
+      programs as lists of interactions:</p>
+
+    <ul>
+      <li>If we introduce a function via refactoring, we will know sample values for its inputs.</li>
+      <li>If programmer executes some code, we can later give them more precise auto-complete hints.</li>
+      <li>We can display the same program as text, but also in a format akin to spreadsheets.</li>
+      <li>We can easily let programmers create programs by interacting with live previews.</li>
+    </ul>
+
+    <p>We discuss the key ideas through examples in a simple programming environment for data
+      exploration. Our focus in this essay is more on principles than on providing fine tuned
+      user experience. We keep our environment more explicit, especially when this reveals
+      what is happening behind the scenes. We aim to show that seeing programs as
+      lists of interactions is a powerful change of perspective that can help us build better
+      programming systems with novel features that make programming easier and more accessible.
+      The data exploration environment in this interactive essay may not yet be that, but it
+      gives a glimpse of the future.
+    </p>
+  </div></div>
+</div>
+</header>
+
+<article>
+<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-7 col-xl-6">
+
+  <h2>Background</h2>
+  <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+      Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+  </p>
+
+</div></div></div>
+
+<div class="demo" id="screen1"><div id="screen1-body" class="demo-body">
+<div class="container">
+  <div class="row">
+    <div class="col-sm-10 demo-top">
+      <h2>Stuff</h2>
     </div>
-    <div class="row">
-      <div class="col-sm-12 col-md-9 col-lg-8">
-      <p>Programs are created through a variety of interactions. A programmer might write some code,
-        execute it to check whether it works, use copy and paste, apply a refactoring or choose 
-        an item from an auto-complete list offered by their editor. Programming research often 
-        forgets about these. We represent programs as text that results from these. Consequently,
-        thinking about such interactionsis out of scope of our work. This essay shows
-        how to shift our focus from <em>programs</em> to a more interesting question of 
-        <em>programming</em>.</p>
-        
-      <p>We represent programs as <em>lists of interactions</em> such as triggering an 
-        auto-complete on a value, choosing an option, entering a value, defining a variable
-        or evaluating a piece of code. We aim to make programming easier by favoring interactions
-        such as choosing from a list over interactions such as typing an arbitrary function call.
-        We explore a number of consequences of thinking about programs as lists of interactions.</p>
-      <ul>
-        <li>If we know that a function was a result of refactoring, we can make it easy to deubug it. </li>
-        <li>If we know that some code was interactively executed in the past, we can give developers more
-          precise hints in auto-completion lists. </li>
-        <li>Moving away from text representation lets us visualize the same program in a traditional
-          text format, but also in a format akin to spreadsheets.</li>
-        <li>Having interaction as a first class value....</li>
-      </ul>
-      <p>
+  </div>
+  <div class="row">
+    <div class="col-sm-12 col-md-10" style="text-align:center;">
+      <img src="screens/jupyter/frame001.png" id="screen1-frame" style="max-height:60vh;max-width:100%;margin:40px auto 40px auto"/>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-10 large-caption">
+      <p id="screen1-caption"></p>
+    </div>
+  </div>
+</div>
+</div></div>
+<script type="text/captions" id="screen1-captions">
+0: Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+5: Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+10: Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+15: Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+</script>
 
-        knowing that a function was constructed using a refactoring lets us offer more help to 
-        developers; knowing that some code was previously executed lets us 
+<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8">
 
-        knowing that a function was constructed using a refactoring lets us provide better debugging tools;
+  <h2>Introducing Histgram</h2>
+  <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+  </p>
+  <h3>Some basic demo</h3>
+  <p>Evaluate, access a row attribute?
 
-      </p>
-        
-        
-        <p>Context: What is the broad context of the work? What is the importance of the general research area?</p>
-        <p>Inquiry: What problem or question does the paper address? How has this problem or question been addressed by others (if at all)?</p>
-        <p>Approach: What was done that unveiled new knowledge?</p>
-        <p>Knowledge: What new facts were uncovered? If the research was not results oriented, what new capabilities are enabled by the work?</p>
-        <p>Grounding: What argument, feasibility proof, artifacts, or results and evaluation support this work?</p>
-        <p>Importance: Why does this work matter?</p>
+    Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+    Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
+  </p>
+
+</div></div></div>
+
+<div class="demo" id="scrolly1"><div id="scrolly1-body">
+<div class="container">
+  <div class="row">
+    <div class="col-sm-10 demo-top">
+      <h2>Stuff</h2>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12">
+      <div id="out">
       </div>
     </div>
   </div>
-  </header>
-  <article>
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12 col-md-9 col-lg-8">
-        <h2>Introduction</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h2>Introduction</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h3>Some basic demo</h3>
-        <p>Evaluate, access a row attribute?
+  <div class="row">
+    <div class="col-sm-10 large-caption">
+      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    </div>
+  </div>
+</div>
+</div></div>
 
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
+<script type="text/histgram" id="scrolly1-source">[
+  {"kind":"completions","reference":-1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"value","value":"data"},
+  {"kind":"value","value":"data/avia"},
+  {"kind":"value","value":"data/avia.csv"},
+  {"kind":"finishvalue"},
+  {"kind":"code","event":{"kind":"highlight","path":[0]}},
+  {"kind":"code","event":{"kind":"select","path":[0]}},
+  {"kind":"completions","reference":0},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"name","reference":0,"name":"avia"},
+  {"kind":"name","reference":0,"name":"aviaData"},
+  {"kind":"finishnaming"},
+  {"kind":"completions","reference":-1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":2}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"extern","name":"data"}},
+  {"kind":"code","event":{"kind":"highlight","path":[1]}},
+  {"kind":"code","event":{"kind":"select","path":[1]}},
+  {"kind":"completions","reference":1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"dot","reference":1,"member":"load"}},
+
+  {"kind":"code","event":{"kind":"highlight","path":[2]}},
+  {"kind":"code","event":{"kind":"select","path":[2]}},
+  {"kind":"completions","reference":2},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"apply","operation":2,"arguments":[["url","aviaData"]]}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"select","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"interact","interaction":{"kind":"evaluate","reference":3}},
+
+  {"kind":"completions","reference":-1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"value","value":""},
+  {"kind":"value","value":"2529"},
+  {"kind":"finishvalue"},
+  {"kind":"code","event":{"kind":"highlight","path":[4]}},
+  {"kind":"code","event":{"kind":"select","path":[4]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":4},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"name","reference":4,"name":""},
+  {"kind":"name","reference":4,"name":"s"},
+  {"kind":"name","reference":4,"name":"sa"},
+  {"kind":"name","reference":4,"name":"sam"},
+  {"kind":"name","reference":4,"name":"samp"},
+  {"kind":"name","reference":4,"name":"sampl"},
+  {"kind":"name","reference":4,"name":"sample"},
+  {"kind":"name","reference":4,"name":"sampleR"},
+  {"kind":"name","reference":4,"name":"sampleRo"},
+  {"kind":"name","reference":4,"name":"sampleRow"},
+  {"kind":"finishnaming"},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"select","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":3},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"dot","reference":3,"member":"at"}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[5]}},
+  {"kind":"code","event":{"kind":"select","path":[5]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":5},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"apply","operation":5,"arguments":[["index","sampleRow"]]}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6]}},
+  {"kind":"code","event":{"kind":"select","path":[6]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":6},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"code","event":{"kind":"menu","selected":4}},
+  {"kind":"code","event":{"kind":"menu","selected":5}},
+  {"kind":"code","event":{"kind":"menu","selected":6}},
+  {"kind":"code","event":{"kind":"menu","selected":7}},
+  {"kind":"code","event":{"kind":"menu","selected":8}},
+  {"kind":"code","event":{"kind":"menu","selected":9}},
+  {"kind":"code","event":{"kind":"menu","selected":10}},
+  {"kind":"interact","interaction":{"kind":"dot","reference":6,"member":"2015"}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[7]}},
+  {"kind":"code","event":{"kind":"select","path":[7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"interact","interaction":{"kind":"evaluate","reference":7}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"select","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":["sampleRow",6,7]}},
+  {"kind":"code","event":{"kind":"select","path":["sampleRow",6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[5,6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[3,5,6,7]}},
+  {"kind":"code","event":{"kind":"select","path":[3,5,6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"noselect"}}
+]</script>
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-12 col-md-9 col-lg-8">
+
         <h3>Programming through values</h3>
         <p>Turn the above into a function and still be able to evaluate the body!
 
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
         </p>
+
+
         <h2>User interface fun</h2>
         <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
         </p>
@@ -109,7 +296,7 @@
     </div>
   </div>
 
-  <div class="demo" id="scrolly1"><div id="scrolly1-body">
+  <div class="demo" id="scrolly2"><div id="scrolly2-body">
   <div class="container">
     <div class="row">
       <div class="col-sm-12">
@@ -117,7 +304,7 @@
         </div>
       </div>
     </div>
-  </div>   
+  </div>
   </div></div>
 
   <div class="container">
