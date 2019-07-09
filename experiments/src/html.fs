@@ -108,6 +108,7 @@ type DomNode =
   | Delayed of string * DomNode * (string -> unit)
   | Element of ns:string * tag:string * attributes:(string * DomAttribute)[] * children : DomNode[] * onRender : (HTMLElement -> unit) option
   | Part of func:(HTMLElement -> unit)
+  | Animate of string * int * DomNode
 
 let createTree ns tag args children =
     let attrs = ResizeArray<_>()
@@ -128,12 +129,36 @@ let createTree ns tag args children =
 
 let mutable counter = 0
 
-let rec renderVirtual node = 
+let rec renderVirtual (cache:System.Collections.Generic.IDictionary<_, _>) node = 
   match node with
+  | Animate(id, hash, body) ->
+      let switch, past = match cache.TryGetValue id with false, _ -> false, [] | _, (b, past) -> b, past
+      let switch, past = 
+        match past with 
+        | [] -> not switch, [ hash, body ]
+        | (prevHash, _)::_ when prevHash <> hash -> not switch, (hash, body)::past |> List.truncate 2
+        | _ -> switch, past
+      cache.[id] <- (switch, past)
+      
+      let prev = past |> Seq.tryFind (fun (h, _) -> h <> hash) 
+      let aord1, aord2 = if switch then "anim-second", "anim-first" else "anim-first", "anim-second"
+      let children = [| 
+          match prev with 
+          | Some(_, prev) -> yield Element(null, "div", [| "class", Attribute("anim anim-prev " + aord1) |], [| prev |], None)
+          | _ -> ()
+          yield Element(null, "div", [| "class", Attribute("anim anim-current " + aord2) |], [| body |], None)
+        |]
+      let children = if switch then Array.rev children else children
+
+      let body = Element(null, "div", [| "class", Attribute "animated" |], children, None)
+      renderVirtual cache body
+
   | Text(s) -> 
       box s
+
   | Element(ns, tag, attrs, children, None) ->
-      createTree ns tag attrs (Array.map renderVirtual children)
+      createTree ns tag attrs (Array.map (renderVirtual cache) children)
+
   | Delayed(symbol, body, func) ->
       counter <- counter + 1
       let id = sprintf "delayed_%d" counter
@@ -155,7 +180,7 @@ let rec renderVirtual node =
           waitForAdded 10 node
       let h = createNew Hook ()
 
-      createTree null "div" ["renderhk", Property h] [| renderVirtual body |]
+      createTree null "div" ["renderhk", Property h] [| renderVirtual cache body |]
   | Element _ ->
       failwith "renderVirtual: Does not support elements with after-render handlers"
   | Part _ ->
@@ -163,6 +188,9 @@ let rec renderVirtual node =
 
 let rec render node = 
   match node with
+  | Animate _ ->
+      failwith "Animate not supported"
+
   | Text(s) -> 
       document.createTextNode(s) :> Node, ignore
 
@@ -207,10 +235,11 @@ let createVirtualDomAsyncApp id initial r u =
   let mutable tree = Fable.Core.JsInterop.createObj []
   let mutable state = initial
   let events = ResizeArray<_>()
+  let cache = System.Collections.Generic.Dictionary<_, _>()
 
   let setState newState = 
     state <- newState
-    let newTree = r (events :> seq<_>) trigger state |> renderVirtual
+    let newTree = r (events :> seq<_>) trigger state |> renderVirtual cache
     let patches = Virtualdom.diff tree newTree
     container <- Virtualdom.patch container patches
     tree <- newTree 
@@ -235,10 +264,11 @@ let createVirtualDomApp id initial r u =
   document.getElementById(id).appendChild(container) |> ignore
   let mutable tree = Fable.Core.JsInterop.createObj []
   let mutable state = initial
+  let cache = System.Collections.Generic.Dictionary<_, _>()
 
   let setState newState = 
     state <- newState
-    let newTree = r trigger state |> renderVirtual
+    let newTree = r trigger state |> renderVirtual cache
     let patches = Virtualdom.diff tree newTree
     container <- Virtualdom.patch container patches
     tree <- newTree
@@ -268,6 +298,9 @@ type El(ns) =
 
   member x.delayed sym body f =
     Delayed(sym, body, f)
+
+  member x.anim id hash body = 
+    Animate(id, hash, body)
 
   member x.part (initial:'State) (fold:'State -> 'Event -> 'State) = 
     let evt = Control.Event<_>()

@@ -1,132 +1,238 @@
 ﻿<!doctype html>
 <html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  <link href="https://fonts.googleapis.com/css?family=Kreon:300,400,700|PT+Sans:400,400i,700|Roboto+Mono:300,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Kreon:300,400,700|PT+Sans:400,400i,700|Roboto+Mono:300,400,700&display=swap" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
 </head>
 <body>
 <header>
 <div class="container">
   <div class="row"><div class="col-sm-12 col-md-10 col-lg-7">
 
-    <h1><strong>Hist<span style="position:relative;top:4px;margin:0px 2px 0px 2px;">&bull;</span>gram:</strong>
+    <h1><strong>Histogram:</strong>
       You have to know the past to understand the present</h1>
 
   </div></div>
-  <div class="row"><div class="col-sm-12 col-lg-9 col-xl-8">
+  <div class="row"><div class="col-sm-12 col-lg-9 col-xl-8 markdown">
 
     <p class="author"><strong>Tomas Petricek</strong>, University of Kent<br />
-      <a href="http://twitter.com/tomaspetricek">@tomaspetricek</a> |
-      <a href="mailto:tomas@tomasp.net">tomas@tomasp.net</a></p>
+    <a href="http://twitter.com/tomaspetricek">@tomaspetricek</a> |
+    <a href="mailto:tomas@tomasp.net">tomas@tomasp.net</a></p>
 
-    <p>Programs are created through a variety of interactions. A programmer might write some
-      code, run it interactively to check whether it works, use copy and paste, apply a
-      refactoring or choose an item from an auto-complete list. Programming research often
-      forgets about these and represents programs as the resulting text. Consequently,
-      thinking about such interactions is often out of scope. This essay shift focus from
-      <em>programs</em> to a more interesting question of <em>programming</em>.</p>
+    Programs are created through a variety of interactions. A programmer might write some
+    code, run it interactively to check whether it works, use copy and paste, apply a
+    refactoring or choose an item from an auto-complete list. Programming research often
+    forgets about these and represents programs as the resulting text. Consequently,
+    thinking about such interactions is often out of scope. This essay shift focus from
+    _programs_ to a more interesting question of _programming_.
 
-    <p>We represent programs as <em>lists of interactions</em> such as triggering an
-      auto-complete and choosing an option, declaring a value, introducing a variable
-      or evaluating a piece of code. We explore a number of consequences of thinking about
-      programs as lists of interactions:</p>
+    We represent programs as _lists of interactions_ such as triggering an
+    auto-complete and choosing an option, declaring a value, introducing a variable
+    or evaluating a piece of code. We explore a number of consequences of thinking about
+    programs as lists of interactions:
 
-    <ul>
-      <li>If we introduce a function via refactoring, we will know sample values for its inputs.</li>
-      <li>If programmer executes some code, we can later give them more precise auto-complete hints.</li>
-      <li>We can display the same program as text, but also in a format akin to spreadsheets.</li>
-      <li>We can easily let programmers create programs by interacting with live previews.</li>
-    </ul>
+     - If we introduce a function via refactoring, we will know sample values for its inputs.
+     - If programmer executes some code, we can later give them more precise auto-complete hints.
+     - We can display the same program as text, but also in a format akin to spreadsheets.
+     - We can easily let programmers create programs by interacting with live previews.
 
-    <p>We discuss the key ideas through examples in a simple programming environment for data
-      exploration. Our focus in this essay is more on principles than on providing fine tuned
-      user experience. We keep our environment more explicit, especially when this reveals
-      what is happening behind the scenes. We aim to show that seeing programs as
-      lists of interactions is a powerful change of perspective that can help us build better
-      programming systems with novel features that make programming easier and more accessible.
-      The data exploration environment in this interactive essay may not yet be that, but it
-      gives a glimpse of the future.
-    </p>
+    We discuss the key ideas through examples in a simple programming environment for data
+    exploration. Our focus in this essay is more on principles than on providing fine tuned
+    user experience. We keep our environment more explicit, especially when this reveals
+    what is happening behind the scenes. We aim to show that seeing programs as
+    lists of interactions is a powerful change of perspective that can help us build better
+    programming systems with novel features that make programming easier and more accessible.
+    The data exploration environment in this interactive essay may not yet be that, but it
+    gives a glimpse of the future.
+
   </div></div>
 </div>
 </header>
 
 <article>
-<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-7 col-xl-6">
+<div class="container"><div class="row">
+<div class="col-sm-12 col-lg-4 col-xl-3 offset-xl-1 order-lg-last markdown">
 
-  <h2>Background</h2>
-  <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-      Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-  </p>
+<div class="d-none d-lg-block" style="height:25px"></div>
+
+> **Supported devices.** This essay includes interactive demos that are not optimized
+> for small screens and touch. To fully explore the demos, you will need a laptop.
+> The page has been tested with recent versions of Firefox and Chrome.
+
+</div>
+<div class="col-sm-12 col-md-11 col-lg-8 col-xl-7 markdown">
+
+**Introduction:** From programs to programming
+----------------------------------------------
+
+A typical theorem of a theoretical programming language research paper starts with a phrase
+_given an expression $e$_. This phrase hides all the interesting interactions that occur during
+program construction between the programmer and their editor and tools. Most modern code editors
+make recommendations through auto-complete, provide quick feedback through background code
+checking and offer tools for refactoring programs. Programmers using test-driven development (TDD)
+switch between editing their tests, running a test runner and adding functionality. Last but not
+least, data analysts write code in notebook systems that let them run it immediately, see the
+results and refine their code accordingly.
+
+Much work has been done on making programming more live and interactive ([Tanimoto, 2013](#refs)).
+Early programming environments for dynamic languages like LISP and Smalltalk ([Sandweall, 1978](#refs),
+[Goldberg and Robson, 1983](#refs)) offered ways of modifying programs without restarting it; visual
+programming languages further developed the live programming paradigm ([Burnett et al., 1998](#refs)),
+Bret Victor illustrated the potential of live programming ([Victor, 2012a](#refs), [Victor, 2012b](#refs))
+and many authors explored those further in the context of user interfaces ([McDirmid, 2007](#refs)),
+musical live coding performances ([Aaron and Blackwell, 2013](#refs)), app development
+([Schiller et al., 2014](#refs)) or data science ([DeLine et al., 2015](#refs)).
+
+In contrast to the above, this essay does not (yet) present a new and better live programming
+environment. We take one more step back and aim to give an equivalent to _given an expression $e$_
+which accepts the live and interactive equivalent of modern programming. We represent a program
+as a _list of interactions_ through which it was constructed. We explore what kinds of tools this
+approach lets us build. To make our case more apparent, our example focuses on the kind of
+programming done by data analysts who use notebook environments to programmatically explore
+data using languages such as Python. However, thinking of programs as lists of interactions
+could inspire the design of other modern interactive programming tools, most likely with different
+but equally interesting consequences.
+
+</div></div>
+<div class="row align-items-end"><div class="col-sm-12 col-md-11 col-lg-8 col-xl-7 markdown">
+
+**Background:** How data analysts work
+--------------------------------------
+
+Programmatic data analysis makes for a perfect sample domain for research on interactive programming
+tools. Most data analysts already use notebook systems such as Jupyter ([Kluyver, 2016](#refs)),
+which blur the distinction between development and execution. Notebooks implement the idea of
+literate programming and make it possible to combine text, equations and code with results of
+running the code, such as tables or visualizations.
+
+Data analysts typically write small snippets of code, structured as _cells_ or code
+blocks in a notebook. They run such snippets interactively, modifying a live state of
+the notebook. They then inspect the results and refine their code accordingly. They might
+refactor some code into a reusable function, but the overall structure of code they write
+remains very simple.
+
+The idea that programming is an interactive process is very easy to illustrate in the
+context of programmatic data analysis. The following demo shows a basic example of using
+Python with the pandas library ([McKinney, 2011](#refs)) to explore data on air traffic
+accidents in Europe from [Eurostat](https://ec.europa.eu/eurostat/statistics-explained/index.php/Air_safety_statistics_in_the_EU#Overview_of_fatalities_in_air_transport_in_the_EU).
+Our input is consists of one CSV file per year with rows capturing individual accidents
+and we are interested in major accidents that resulted in multiple deaths.
+
+</div><div class="col-sm-12 col-md-11 col-lg-4 col-xl-3 offset-xl-1 markdown">
+
+> **How does it work?** The following section uses the _scrollytelling_ technique
+> to let you go through individual steps of the demo at your own pace. Scroll down to move
+> forward and scroll up if you want to return to an earlier step.
 
 </div></div></div>
 
-<div class="demo" id="screen1"><div id="screen1-body" class="demo-body">
+<div class="demo" id="screen1" style="height:2400px"><div id="screen1-body" class="demo-body">
 <div class="container">
   <div class="row">
     <div class="col-sm-10 demo-top">
-      <h2>Stuff</h2>
+      <h2><strong>Demo:</strong> Programmatic data exploration using a notebook</h2>
     </div>
   </div>
   <div class="row">
     <div class="col-sm-12 col-md-10" style="text-align:center;">
-      <img src="screens/jupyter/frame001.png" id="screen1-frame" style="max-height:60vh;max-width:100%;margin:40px auto 40px auto"/>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-sm-10 large-caption">
-      <p id="screen1-caption"></p>
-    </div>
-  </div>
-</div>
-</div></div>
-<script type="text/captions" id="screen1-captions">
-0: Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-5: Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-10: Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-15: Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-</script>
-
-<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8">
-
-  <h2>Introducing Histgram</h2>
-  <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-  </p>
-  <h3>Some basic demo</h3>
-  <p>Evaluate, access a row attribute?
-
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-  </p>
-
-</div></div></div>
-
-<div class="demo" id="scrolly1"><div id="scrolly1-body">
-<div class="container">
-  <div class="row">
-    <div class="col-sm-10 demo-top">
-      <h2>Stuff</h2>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-sm-12">
-      <div id="out">
+      <div class="frame">
+        <img src="screens/jupyter/frame001.png" id="screen1-frame-a" style="position:absolute;max-width:100%;max-height:60vh"/>
+        <img src="screens/jupyter/frame001.png" id="screen1-frame-b" style="max-width:100%;max-height:60vh"/>
       </div>
     </div>
   </div>
   <div class="row">
-    <div class="col-sm-10 large-caption">
-      <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    <div class="col-sm-10 large-caption" id="screen1-caption" class="caption">
     </div>
   </div>
 </div>
 </div></div>
+<script type="text/captions" id="screen1-captions">/*
+0: We write code to load data for one sample year and print first few rows. We run the code immediately to see what the data in the input file look like!
+2: Based on the displayed preview, we write code to get major incidents and remove duplicate records. We use names of columns as they appear in the preview.
+7: Now we know that the pre-processing code works well. We use copy &amp; paste to define a function that can load and filter data for any given year.
+14: We call the function for 2015 and 2014 and discover that we need to modify it to get accidents resulting in deaths, not just injuries.
+18: We modify the query, but evaluating code block that defines the function does not give us any indication whether we changed it correctly.
+21: We discover an error when running later code that calls the function. We go back and change the value in the query to the correct one!
+*/</script>
 
-<script type="text/histgram" id="scrolly1-source">[
+<div class="container"><div class="row align-items-end"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
+
+There are a number of general points that are illustrated by the above demonstration:
+
+1. Running code is an interaction that occurs during the process of writing a program.
+  When analysing data, we run code to understand our inputs and check that our data processing works
+  as expected. When building software systems, running code is less evident, but similarly
+  important -- developers regularly run code when using test-driven development or when evolving
+  scripts written using REPL to programs.
+
+2. Once we package code as a function, it becomes harder to debug and test. When writing code,
+  we put loading in one cell so that Jupyter displays the result in a table. Once we
+  package code as a function, it becomes a black-box. When we change it, we cannot see
+  intermediate results, which makes it harder to discover and fix bugs.
+
+3. The names of members on the object that represents a data frame depend on the contents of
+  a file that we load. For example, when we write `raw[raw.value > 10]`, we know that
+  `value` is a column of the data frame only because we looked at the output of the
+  `pd.read_csv` file that we executed previously.
+
+4. Most of our interactions are text-based. When defining a function, we copy the text from
+  two cells we created earlier. We also often have to come up with the name to type, for example
+  when invoking operations such as `head`, `query` or when writing the condition passed to `query`.
+  Auto-complete can help with some of those, but not always.
+
+There are programming environments for which the above points do not hold. For example, Kepler
+([Ludäscher 2006](#refs)) is a non-textual scientific data analysis system, while type providers
+([Petricek, 2016](#refs)) import external data into a programming language. However, the above
+demo and observations are typical for present day workflow of a data analyst who uses programming
+tools. As we will see,
+
+**Histogram**: Programs as lists of interactions
+------------------------------------------------
+
+The key idea of this essay is that we should represent programs as lists of interactions.
+The essay includes a prototype implementation that lets us explore the consequences of using such
+representation for a programming task like the one presented in the above demo. We call our
+prototype environment _Histogram_ (a compound of _history_ and _programming_ which has nothing
+to do with data visualization). We start with a short demo of Histogram and then discuss how
+exactly Histogram works behind the scenes.
+
+### Interacting with the Histogram environment
+
+The following demo uses Histogram to load a file `avia.csv`, which contains data on air traffic
+accidents in Europe for all years between 1990 and 2017. We find a row that corresponds to accidents
+that occured in France and involved planes registered in Germany and then obtain the number of people
+killed in the [Germanwings Fligth 9525 crash](https://en.wikipedia.org/wiki/Germanwings_Flight_9525).
+
+
+</div><div class="col-sm-12 col-md-9 col-lg-4 markdown">
+
+> **How does it work?** The following section again uses scrollytelling, but it is also interactive.
+> You can just scroll down to replay the demo, but you can also stop at any point and interact
+> with the system on your own. If you do that, the auto-play will stop until you reset it, so
+> you will not lose your experiments.
+
+</div></div></div>
+
+<div class="demo" id="scrolly1" style="height:1500px"><div id="scrolly1-body" class="demo-body">
+<div class="container-fluid bigger-container">
+  <div class="row">
+    <div class="col-sm-10 demo-top">
+      <h2><strong>Demo:</strong> Interacting with the Histogram environment</h2>
+    </div>
+  </div>
+  <div id="scrolly1-out">
+  </div>
+</div>
+</div></div>
+
+<script type="text/histgram" id="scrolly1-source" data-skip-events="1">[
+  {"kind":"caption","number":1, "text":"We start with an empty program and define a new value to hold the name of our input file. To name the value, we choose the 'name' operation from an auto-complete list and enter the name for our variable."},
   {"kind":"completions","reference":-1},
   {"kind":"code","event":{"kind":"menu","selected":0}},
   {"kind":"value","value":"data"},
@@ -140,6 +246,8 @@
   {"kind":"name","reference":0,"name":"avia"},
   {"kind":"name","reference":0,"name":"aviaData"},
   {"kind":"finishnaming"},
+
+  {"kind":"caption","number":2, "text":"We use a pre-defined object 'data' to load input CSV file. We invoke the 'load' operation via auto-complete, which offers possible arguments for the 'url' parameter of the operation. We evaluate the code block and see a preview of the loaded data table."},
   {"kind":"completions","reference":-1},
   {"kind":"code","event":{"kind":"menu","selected":0}},
   {"kind":"code","event":{"kind":"menu","selected":2}},
@@ -152,7 +260,6 @@
   {"kind":"code","event":{"kind":"menu","selected":1}},
   {"kind":"code","event":{"kind":"menu","selected":3}},
   {"kind":"interact","interaction":{"kind":"dot","reference":1,"member":"load"}},
-
   {"kind":"code","event":{"kind":"highlight","path":[2]}},
   {"kind":"code","event":{"kind":"select","path":[2]}},
   {"kind":"completions","reference":2},
@@ -166,6 +273,7 @@
   {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"interact","interaction":{"kind":"evaluate","reference":3}},
 
+  {"kind":"caption","number":3, "text":"We add another variable, representing an index of a sample row from the data table that we loaded. This row includes data for the German Wings 9525 fligth."},
   {"kind":"completions","reference":-1},
   {"kind":"code","event":{"kind":"menu","selected":0}},
   {"kind":"value","value":""},
@@ -177,19 +285,11 @@
   {"kind":"completions","reference":4},
   {"kind":"code","event":{"kind":"menu","selected":0}},
   {"kind":"code","event":{"kind":"menu","selected":1}},
-  {"kind":"name","reference":4,"name":""},
-  {"kind":"name","reference":4,"name":"s"},
-  {"kind":"name","reference":4,"name":"sa"},
-  {"kind":"name","reference":4,"name":"sam"},
-  {"kind":"name","reference":4,"name":"samp"},
   {"kind":"name","reference":4,"name":"sampl"},
-  {"kind":"name","reference":4,"name":"sample"},
-  {"kind":"name","reference":4,"name":"sampleR"},
-  {"kind":"name","reference":4,"name":"sampleRo"},
   {"kind":"name","reference":4,"name":"sampleRow"},
   {"kind":"finishnaming"},
-  {"kind":"code","event":{"kind":"highlight","path":[3]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
+
+  {"kind":"caption","number":4, "text":"We use the 'at' operation to access a sample row. We invoke it via auto-complete, which offers possible arguments for the 'index' parameter. We then use auto-complete again to get available attributes of the sample data row and choose '2015'. Note that we did not evaluate the code yet – the attributes are offered based on type information."},
   {"kind":"code","event":{"kind":"highlight","path":[3]}},
   {"kind":"code","event":{"kind":"select","path":[3]}},
   {"kind":"code","event":{"kind":"nohighlight"}},
@@ -211,11 +311,7 @@
   {"kind":"interact","interaction":{"kind":"apply","operation":5,"arguments":[["index","sampleRow"]]}},
   {"kind":"code","event":{"kind":"noselect"}},
   {"kind":"code","event":{"kind":"highlight","path":[6]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
-  {"kind":"code","event":{"kind":"highlight","path":[6]}},
   {"kind":"code","event":{"kind":"select","path":[6]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
-  {"kind":"code","event":{"kind":"highlight","path":[6]}},
   {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"completions","reference":6},
   {"kind":"code","event":{"kind":"menu","selected":0}},
@@ -233,125 +329,299 @@
   {"kind":"code","event":{"kind":"highlight","path":[7]}},
   {"kind":"code","event":{"kind":"select","path":[7]}},
   {"kind":"code","event":{"kind":"nohighlight"}},
+
+  {"kind":"caption","number":5, "text":"We evaluate the last code block and get 150 as the result. We then navigate around the code and look at newly evaluated block representing the entire sample row and the previously evaluated data table."},
   {"kind":"interact","interaction":{"kind":"evaluate","reference":7}},
-  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
   {"kind":"code","event":{"kind":"select","path":[6,7]}},
   {"kind":"code","event":{"kind":"nohighlight"}},
-  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"code","event":{"kind":"highlight","path":["sampleRow",6,7]}},
-  {"kind":"code","event":{"kind":"select","path":["sampleRow",6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
-  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"code","event":{"kind":"highlight","path":[5,6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
-  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
   {"kind":"code","event":{"kind":"highlight","path":[3,5,6,7]}},
   {"kind":"code","event":{"kind":"select","path":[3,5,6,7]}},
-  {"kind":"code","event":{"kind":"nohighlight"}},
-  {"kind":"code","event":{"kind":"noselect"}}
+  {"kind":"code","event":{"kind":"nohighlight"}}
 ]</script>
 
-<div class="container">
+<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
+
+The demo shows a number of important points about the Histogram programming environment.
+First, the program is displayed in a way that looks much like textual source code, but the program
+is not represented as text and you cannot edit Histogram programs as text. This view is just
+one way of displaying Histogram programs and we will see an alternative view later.
+
+Second, much of programming is done by choosing options from auto-completion lists. Histogram follows a
+design principle that prefers _choosing_ over _composing_, because making a choice is easier than
+coming up with expressions without guidance. We follow this principle even when supplying
+arguments to operations such as `load` and `at`, although one can imagine a variety of
+usability improvements.
+
+Finally, the demo shows Histogram in a simple developer environment with buttons, drop-down menus and
+textboxes and it replays the interactions with the user interface. Histogram represents programs
+as lists of interactions, but the user interface elements are not a part of the _language
+specification_. The next section clarifies what counts as an _interaction_ in Histogram.
+
+### Representing programs as lists of interactions
+
+The representation of programs that we use in our prototype is perhaps best explained through a
+small formal definition. Readers not familiar with programming language theory notation can see
+this as an [algebraic data type](https://en.wikipedia.org/wiki/Algebraic_data_type) (or a
+discriminated union) as known from languages like Haskell or F#. Note that we do not use the definiton
+for proving any properties in this essay, but we suggest some properties later when discussing
+the type system.
+
+
+```mathjax
+\begin{array}{rcl}
+\textit{program}
+  &=& \textit{interaction}_1, ~\ldots,~ \textit{interaction}_k\\[0.25em]
+\textit{ref}
+  &=& \textbf{named}~\textit{name}~~|~~\textbf{indexed}~i\\[0.25em]
+\textit{interaction}
+  &=& \textbf{def}~\textit{value}\\
+  &|& \mathbf{name}~\textit{ref}~\textbf{as}~\textit{name}\\
+  &|& \textbf{dot}~\textit{name}~\textbf{on}~\textit{ref}\\
+  &|& \textbf{apply}~\textbf{args}~\textit{ref}_1, \ldots, \textit{ref}_n~\textbf{to}~\textit{ref}\\
+  &|& \mathbf{evaluate}~\textit{ref}\\
+  &|& \mathbf{abstract}~\textbf{from}~\textit{ref}_1, \ldots, \textit{ref}_k~\textbf{to}~\textit{ref}
+\end{array}
+```
+
+A $\textit{program}$ is a finite sequence of interactions. To display a program,
+we start with an initial empty state and apply the interactions to the current state in a sequence.
+A state is a bit like a spreadsheet -- it is a mapping that maps references $\textit{ref}$ to
+formulas and, when a formula has been evaluated, also values. We do not give a fully formal
+definition of _formulas_ and _values_, but briefly:
+
+- a _reference_ can be just an index or a name. Most interactions create new formulas that
+  are indexed and the user has the option to name them later;
+- a _value_ can be a primitive value (number or string), an object or an operation;
+- a _formula_ can be member access (or an object identified by a reference) or an invocation (of an operation
+identified by a reference with multiple arguments, each identified by a reference).
+
+The interactions listed above and their effect on the state are:
+
+- $\textbf{def}$ -- defines a new primitive value and adds it to the state using a new
+  indexed reference as the key. We used this above when defining a string with the file name
+  or the index of a sample row.
+- $\textbf{name}$ -- renames a reference, typically from an indexed one to a named one. We did
+  this when introducing named variables `aviaData` and `sampleRow`.
+- $\textbf{dot}$ -- creates a new formula with an indexed reference that represents a member
+  access on an object identified by another reference. We use this when accessing the `load`
+  member or the `at` member.
+- $\textbf{apply}$ -- creates a formula that represents an invocation of an operation. The
+  arguments $\textbf{args}$ and the operation $\textbf{to}$ are all identified by references.
+  We used $\text{apply}$ when calling `load` or `at` (with loaded data table as instance and
+  `sampleRow` as one and only argument).
+- $\textbf{eval}$ -- evaluates a formula specified by a reference and adds the resulting value to
+  the current program state. The value can then be retrieved as when we looked at a preview of
+  a table or a row after evaluating it. Evaluation also recursively evaluates all references that
+  are required for obtaining a value for the specified one.
+- $\textbf{abstract}$ -- defines a new operation. We have not used this operation yet, but we
+  will do this in the next demo. As we'll see, this is done by marking some references in the
+  current existing state as inputs and outputs.
+
+There are a few additional interactions in the prototype, but the above documents the
+important ones. Although we left out details of how individual interactions affect the
+program state, it is close to being a full description that one could use to reimplement the
+Histogram system. We did not say much about the $\text{abstract}$ interaction and we will rectify
+that next.
+
+### Turning formulas into reusable functions
+
+We already discussed one design principle in Histogram -- _prefer choosing over composing_.
+The following demo will illustrate another design principle, which is _always let users see
+concrete values_. This was, indeed, the case in the previous demo where each formula we added
+had a corresponding value. Evaluation is explicit and has to be triggered by the user, but
+each formula had a value. How to keep this property becomes an interesting challenge when we
+want to let programmers introduce custom operations or _function values_.
+
+</div></div></div>
+
+<div class="demo" id="scrolly2" style="height:1200px"><div id="scrolly2-body" class="demo-body">
+<div class="container-fluid bigger-container">
   <div class="row">
-    <div class="col-sm-12 col-md-9 col-lg-8">
-
-        <h3>Programming through values</h3>
-        <p>Turn the above into a function and still be able to evaluate the body!
-
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-
-
-        <h2>User interface fun</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h3>Multiple views</h3>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h3>Binding actions to UI elements</h3>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        <h2>Type system</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h3>Dependent types</h3>
-        <p>Well constructed programs are well typed.
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h3>Dependent types</h3>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        </p>
-      </div>
+    <div class="col-sm-10 demo-top">
+      <h2><strong>Demo:</strong> Interacting with the Histogram environment</h2>
     </div>
   </div>
-
-  <div class="demo" id="scrolly2"><div id="scrolly2-body">
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12">
-        <div id="out">
-        </div>
-      </div>
-    </div>
+  <div id="scrolly2-out">
   </div>
-  </div></div>
+</div>
+</div></div>
 
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-12 col-md-9 col-lg-8">
-        <h2>More stuff</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h2>More stuff</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h2>More stuff</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h2>More stuff</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <h2>More stuff</h2>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Architecto consequatur veritatis commodi saepe quod accusantium, eos corrupti laboriosam. Dolorum deserunt ratione vitae ab tempora natus labore assumenda quae deleniti minus?
-        </p>
+<script type="text/histgram" id="scrolly2-source" data-skip-events="50">[
+  {"kind":"caption","number":1, "text":"We start with an empty program and define a new value to hold the name of our input file. To name the value, we choose the 'name' operation from an auto-complete list and enter the name for our variable."},
+  {"kind":"completions","reference":-1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"value","value":"data"},
+  {"kind":"value","value":"data/avia"},
+  {"kind":"value","value":"data/avia.csv"},
+  {"kind":"finishvalue"},
+  {"kind":"code","event":{"kind":"highlight","path":[0]}},
+  {"kind":"code","event":{"kind":"select","path":[0]}},
+  {"kind":"completions","reference":0},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"name","reference":0,"name":"avia"},
+  {"kind":"name","reference":0,"name":"aviaData"},
+  {"kind":"finishnaming"},
 
-      </div>
-    </div>
-  </div>
+  {"kind":"caption","number":2, "text":"We use a pre-defined object 'data' to load input CSV file. We invoke the 'load' operation via auto-complete, which offers possible arguments for the 'url' parameter of the operation. We evaluate the code block and see a preview of the loaded data table."},
+  {"kind":"completions","reference":-1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":2}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"extern","name":"data"}},
+  {"kind":"code","event":{"kind":"highlight","path":[1]}},
+  {"kind":"code","event":{"kind":"select","path":[1]}},
+  {"kind":"completions","reference":1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"dot","reference":1,"member":"load"}},
+  {"kind":"code","event":{"kind":"highlight","path":[2]}},
+  {"kind":"code","event":{"kind":"select","path":[2]}},
+  {"kind":"completions","reference":2},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"apply","operation":2,"arguments":[["url","aviaData"]]}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"select","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"interact","interaction":{"kind":"evaluate","reference":3}},
+
+  {"kind":"caption","number":3, "text":"We add another variable, representing an index of a sample row from the data table that we loaded. This row includes data for the German Wings 9525 fligth."},
+  {"kind":"completions","reference":-1},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"value","value":""},
+  {"kind":"value","value":"2529"},
+  {"kind":"finishvalue"},
+  {"kind":"code","event":{"kind":"highlight","path":[4]}},
+  {"kind":"code","event":{"kind":"select","path":[4]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":4},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"name","reference":4,"name":"sampl"},
+  {"kind":"name","reference":4,"name":"sampleRow"},
+  {"kind":"finishnaming"},
+
+  {"kind":"caption","number":4, "text":"We use the 'at' operation to access a sample row. We invoke it via auto-complete, which offers possible arguments for the 'index' parameter. We then use auto-complete again to get available attributes of the sample data row and choose '2015'. Note that we did not evaluate the code yet – the attributes are offered based on type information."},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"select","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":[3]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":3},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"dot","reference":3,"member":"at"}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[5]}},
+  {"kind":"code","event":{"kind":"select","path":[5]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":5},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"interact","interaction":{"kind":"apply","operation":5,"arguments":[["index","sampleRow"]]}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[6]}},
+  {"kind":"code","event":{"kind":"select","path":[6]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"completions","reference":6},
+  {"kind":"code","event":{"kind":"menu","selected":0}},
+  {"kind":"code","event":{"kind":"menu","selected":1}},
+  {"kind":"code","event":{"kind":"menu","selected":3}},
+  {"kind":"code","event":{"kind":"menu","selected":4}},
+  {"kind":"code","event":{"kind":"menu","selected":5}},
+  {"kind":"code","event":{"kind":"menu","selected":6}},
+  {"kind":"code","event":{"kind":"menu","selected":7}},
+  {"kind":"code","event":{"kind":"menu","selected":8}},
+  {"kind":"code","event":{"kind":"menu","selected":9}},
+  {"kind":"code","event":{"kind":"menu","selected":10}},
+  {"kind":"interact","interaction":{"kind":"dot","reference":6,"member":"2015"}},
+  {"kind":"code","event":{"kind":"noselect"}},
+  {"kind":"code","event":{"kind":"highlight","path":[7]}},
+  {"kind":"code","event":{"kind":"select","path":[7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+
+  {"kind":"caption","number":5, "text":"We evaluate the last code block and get 150 as the result. We then navigate around the code and look at newly evaluated block representing the entire sample row and the previously evaluated data table."},
+  {"kind":"interact","interaction":{"kind":"evaluate","reference":7}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"select","path":[6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}},
+  {"kind":"code","event":{"kind":"highlight","path":["sampleRow",6,7]}},
+  {"kind":"code","event":{"kind":"highlight","path":[6,7]}},
+  {"kind":"code","event":{"kind":"highlight","path":[5,6,7]}},
+  {"kind":"code","event":{"kind":"highlight","path":[3,5,6,7]}},
+  {"kind":"code","event":{"kind":"select","path":[3,5,6,7]}},
+  {"kind":"code","event":{"kind":"nohighlight"}}
+]</script>
+
+<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
+
+
+<h2>User interface fun</h2>
+<h3>Multiple views</h3>
+<h3>Binding actions to UI elements</h3>
+<h2>Type system</h2>
+<h3>Well constructed programs</h3>
+<h3>Dependent types</h3>
+
+
+Kluyver, T., Ragan-Kelley, B., Pérez, F., Granger, B.E., Bussonnier, M., Frederic, J., Kelley, K., Hamrick, J.B., Grout, J., Corlay, S. & Ivanov, P. (2016).
+Jupyter Notebooks-a publishing format for reproducible computational workflows. In ELPUB (pp. 87-90).
+
+McKinney, W. (2011). pandas: a foundational Python library for data analysis and statistics. Python for High Performance and Scientific Computing, 14.
+
+Goldberg, A., & Robson, D. (1983). Smalltalk-80: the language and its implementation. Addison-Wesley Longman Publishing Co., Inc..
+
+Sandewall, E. (1978). Programming in an interactive environment: the LISP experience. ACM Computing Surveys, 10(1), 35-71.
+
+DeLine, R., Fisher, D., Chandramouli, B., Goldstein, J., Barnett, M., Terwilliger, J. F., & Wernsing, J. (2015, October). Tempe: Live scripting for live data. In VL/HCC (pp. 137-141).
+
+Victor, B. (2012). Inventing on principle.
+
+Seyser, D., & Zeiller, M. (2018, July). Scrollytelling -- An Analysis of Visual Storytelling in Online Journalism. In 2018 22nd International Conference Information Visualisation (IV) (pp. 401-406). IEEE.
+
+Petricek, T., Guerra, G., & Syme, D. (2016, June). Types from data: Making structured data first-class citizens in F. In ACM SIGPLAN Notices (Vol. 51, No. 6, pp. 477-490). ACM.
+
+Ludäscher, B., Altintas, I., Berkley, C., Higgins, D., Jaeger, E., Jones, M., ... & Zhao, Y. (2006). Scientific workflow management and the Kepler system. Concurrency and Computation: Practice and Experience, 18(10), 1039-1065.
+
+Victor, B. (2012). Learnable programming. Worrydream. com.
+
+Maloney, J. H., & Smith, R. B. (1995, November). Directness and liveness in the morphic user interface construction environment. In ACM Symposium on User Interface Software and Technology (Vol. 95, pp. 21-28).
+
+Burnett, M. M., Atwood, J. W., & Welch, Z. T. (1998, September). Implementing level 4 liveness in declarative visual programming languages. In Proceedings. 1998 IEEE Symposium on Visual Languages (Cat. No. 98TB100254) (pp. 126-133). IEEE.
+
+Tanimoto, S. L. (2013, May). A perspective on the evolution of live programming. In Proceedings of the 1st International Workshop on Live Programming (pp. 31-34). IEEE Press.
+
+McDirmid, S. (2013, October). Usable live programming. In Proceedings of the 2013 ACM international symposium on New ideas, new paradigms, and reflections on programming & software (pp. 53-62). ACM.
+
+McDirmid, S. (2007, October). Living it up with a live programming language. In ACM SIGPLAN Notices (Vol. 42, No. 10, pp. 623-638). ACM.
+
+Aaron, S., & Blackwell, A. F. (2013, September). From sonic Pi to overtone: creative musical experiences with domain-specific and functional languages. In Proceedings of the first ACM SIGPLAN workshop on Functional art, music, modeling & design (pp. 35-46). ACM.
+
+Schiller, J., Turbak, F., Abelson, H., Dominguez, J., McKinney, A., Okerlund, J., & Friedman, M. (2014, October). Live programming of mobile apps in App Inventor. In Proceedings of the 2nd Workshop on Programming for Mobile & Touch (pp. 1-8). ACM.
+
+</div>
+</div>
+</div>
   </article>
 
 
   <script src="bundle.js"></script>
+  <script type="text/javascript">
+  var style = document.getElementsByTagName("link")[2].href;
+  window.onkeydown = function(e) {
+    if (e.keyCode == 27) {
+      document.getElementsByTagName("link")[2].href = style + "?" + ("" + Math.random()).substr(2)
+    }
+  }
+  </script>
 </body>
 </html>

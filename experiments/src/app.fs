@@ -1,6 +1,4 @@
-module App
-
-open Fable.PowerPack.Keyboard
+﻿module App
 
 // ------------------------------------------------------------------------------------------------
 // Types
@@ -12,7 +10,7 @@ type Reference =
 
 type ObjectValue =
   abstract Lookup : string -> Value
-  abstract Preview : (unit -> unit) -> Tbd.Html.DomNode
+  abstract Preview : (unit -> unit) -> string * Tbd.Html.DomNode option
   abstract Hash : int
 
 and Value =
@@ -129,10 +127,11 @@ let rec hashCode code ref =
 
 let rec formatType depth typ =
   match typ with
-  | _ when depth > 3 -> "(...)"
+  | ObjectType _ when depth > 3 -> "record"
+  | OperationType _ when depth > 3 -> "operation"
   | PrimitiveType p -> p
   | ObjectType(ot) -> sprintf "{ %s }" (String.concat ", " [for m, t in Seq.truncate 5 ot.Members -> m + ":" + formatType (depth+1) t])
-  | OperationType(args, res) -> sprintf "(%s -> %s)" (String.concat ", " [for m, t in args -> m + ":" + formatType (depth+1) t]) (formatType (depth+1) res)
+  | OperationType(args, res) -> sprintf "(%s) -> %s" (String.concat ", " [for m, t in args -> m + ":" + formatType (depth+1) t]) (formatType (depth+1) res)
 
 let rec evaluateExpr code values ref = async {
   match find ref code.Source with
@@ -302,15 +301,20 @@ open Tbd.Compost
 open Fable.Core
 open Fable.Import
 open Fable.PowerPack
+open Tbd
 
 let renderTable headers data =
   h?div ["class"=>"table-container"] [
     h?table ["class"=>"data"] [
-      yield h?tr [] [
-        for hd in headers -> h?th [] [ text (string hd) ]
+      h?thead [] [
+        h?tr [] [
+          for hd in headers -> h?th [] [ text (string hd) ]
+        ]
       ]
-      for row in data -> h?tr [] [
-        for col in row -> h?td [] [ text (string col) ]
+      h?tbody [] [
+        for row in data -> h?tr [] [
+          for col in row -> h?td [] [ text (string col) ]
+        ]
       ]
     ]
   ]
@@ -334,6 +338,7 @@ type Model =
     CurrentName : (Reference * string) option
 
     CodeState : CodeState
+    Caption : (int * string) option
     }
 
 type CodeEvent =
@@ -345,6 +350,7 @@ type Event =
   | Backward
   | Forward
 
+  | Caption of int * string
   | Interact of Interaction
   | Refresh
 
@@ -380,6 +386,9 @@ let updateCode state = function
 
 let update model evt = async {
   match evt with
+  | Caption(n, s) -> 
+      return { model with Caption = Some(n, s) }
+
   | CodeEvent ce ->
       let newCompletions = match ce with Select _ -> None | _ -> model.CurrentCompletions
       return { model with CodeState = updateCode model.CodeState ce; CurrentCompletions = newCompletions }
@@ -441,12 +450,21 @@ let rows els =
     for e in els -> h?tr [] [ h?td [ "class" => "cell cell-row" ] [ e ] ]
   ]
 
-let renderPreview cls trigger (v:Value) =
-  h?div ["class" => cls ] [
-    match v with
-    | OperationValue(_, v) -> yield text ("(Operation)")
-    | ObjectValue v -> yield h?div [] [ text "Object:"; v.Preview(fun () -> trigger Refresh) ]
-    | PrimitiveValue v -> yield text ("Primitive: " + string v) ]
+let getPreview trigger (v:Value) (typ:Type) =
+    match v, typ with
+    | OperationValue _, _ -> "Block is an operation " + formatType 3 typ, None
+    | PrimitiveValue v, PrimitiveType "string" -> "Block is a text '" + string v + "'", None
+    | PrimitiveValue v, PrimitiveType "number" -> "Block is a number " + string v, None
+    | PrimitiveValue v, _ -> "Block is a primitive value '" + string v + "'", None
+    | ObjectValue v, _ -> v.Preview(fun () -> trigger Refresh)
+
+let renderPreview trigger v typ =
+  h?div ["class" => "preview" ] [
+    let s, html = getPreview trigger v typ
+    yield h?p [] [ text s ]
+    match html with 
+    | Some html -> yield html
+    | _ -> () ]
 
 let rec formatReference code ref =
   match ref with
@@ -569,7 +587,7 @@ let renderSheet trigger state =
 
         match getValue state k with
         | Some(v) ->
-            yield renderPreview "preview" trigger v
+            yield renderPreview trigger v (typeCheck state.Code k)
         | None ->
             yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> trigger(Interact(Evaluate k)) ] [ text "evaluate" ]
             yield h?br [] []
@@ -662,12 +680,18 @@ let renderCompletions (ctx:RenderContext) items =
         | _ -> it ]
 
 let renderSelectableBox ctx (path, ref) extras body =
-  h?span [] [
+  h?span [ 
+    "mousemove" =!> fun _ e -> e.cancelBubble <- true
+  ] [
     yield h?span
       [ yield "class" =>
           if pathStarts path ctx.State.SelectedPath then "expr selected"
           elif pathStarts path ctx.State.HighlightedPath then "expr highlighted"
           else "expr"
+        yield "dblclick" =!> fun _ e ->
+          e.cancelBubble <- true
+          Browser.window.getSelection().removeAllRanges()
+          ctx.Trigger(Interact(Evaluate ref)) 
         yield "click" =!> fun _ e ->
           e.cancelBubble <- true
           if ctx.State.SelectedPath <> Some path then ctx.Trigger (CodeEvent(Select(Some path)))
@@ -800,7 +824,7 @@ let renderText trigger (state:Model) =
         "mousemove" =!> fun _ e ->
           e.cancelBubble <- true
           if state.CodeState.HighlightedPath <> None then trigger (CodeEvent(Highlight(None)))
-        "mouseout" =!> fun _ e ->
+        "mouseleave" =!> fun _ e ->
           e.cancelBubble <- true
           if state.CodeState.HighlightedPath <> None then trigger (CodeEvent(Highlight(None)))
       ] [
@@ -808,13 +832,13 @@ let renderText trigger (state:Model) =
           h?div ["class" => "indent"] [
             match ref, allRefs.Contains ref with
             | Named n, _ ->
-                yield h?span [ "class" => "let" ] [ text ("let " + n + " = ") ]
+                yield h?span [ "class" => "let" ] [ h?strong [] [ text "let" ]; text (" " + n + " = ") ]
                 //yield renderReferencedExpression ctx ref
                 yield h?div [ "class" => "indent" ] (renderExpression ctx ([ref], ref) (find ref ctx.Code))
                 //yield h?span [ "class" => "indent" ] (renderReferencedExpression ctx ([ref], ref))
 
             | Indexed n, false ->
-                yield h?span [ "class" => "let" ] [ text (sprintf "do[%d]" n) ]
+                yield h?span [ "class" => "let" ] [ h?strong [] [ text (sprintf "do[%d]" n) ] ]
                 yield h?div [ "class" => "indent" ] (renderReferencedExpression ctx ([ref], ref))
             | _ -> ()
           ]
@@ -850,35 +874,68 @@ let renderText trigger (state:Model) =
           ]
         ]
       ]
+
+  let (|GetValue|_|) ref = getValue ctx.AllState ref
+  
+  let printPathReference lbl = function
+    | Some(Indexed n::_) -> [ h?strong [] [ text (lbl + ": ") ]; text (sprintf "unnamed [%d]" n) ]
+    | Some(Named n::_) -> [ h?strong [] [ text (lbl + ": ") ]; text n ]
+    | _ -> [ h?strong [] [ text lbl ] ]
+
   let preview =
     h?div [
-      "id" => "preview"
+      "class" => "preview"
       "click" =!> fun _ e -> e.cancelBubble <- true
     ] [
-      match ctx.State.HighlightedPath, ctx.State.SelectedPath with
-      | Some (ref::_), _
-      | _, Some (ref::_) ->
-          yield h?p [] [ text (sprintf "Highlighted: %A" ref) ]
-          match getValue ctx.AllState ref with
-          | Some(v) ->
-              yield renderPreview "bigpreview" trigger v
-          | None ->
-              yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; trigger(Interact(Evaluate ref)) ] [ text "evaluate" ]
-      | _ -> ()
+      h?div [ "class" => "section section-highlighted" ] [
+        let msg = 
+          match ctx.State.HighlightedPath with
+          | Some (((GetValue v) as ref)::_) ->
+              fst (getPreview trigger v (typeCheck ctx.AllState.Code ref) )
+          | Some _ ->
+              "Double click on a block to evaluate it."
+          | _ -> 
+              "Move mouse over a block to get quick info."
+        yield h?div [ "class" => "header" ] [ 
+          h.anim "phh" (hash ctx.State.HighlightedPath) <| h?span [] 
+            (printPathReference "quick info" ctx.State.HighlightedPath)
+        ]
+        yield h?div [ "class" => "body" ] [ 
+          h.anim "phb" (hash msg) <| h?div [] [
+            h?span [ "class" => "text" ] [  text msg ] ]
+        ]
+      ]
+      h?div [ "class" => "section section-selected" ] [
+        let msg, body = 
+          match ctx.State.SelectedPath with
+          | Some (((GetValue v) as ref)::_) ->
+              getPreview trigger v (typeCheck ctx.AllState.Code ref) 
+          | Some (ref::_) ->
+              "", Some <| h?div [] [ 
+                h?span ["class" => "text"] [text "Double click on a block to evaluate it." ]
+                h?button [
+                  "class" => "evaluate"
+                  "click" =!> fun _ e -> e.cancelBubble <- true; trigger(Interact(Evaluate ref)) 
+                ] [ text "evaluate" ]
+              ]
+          | _ -> 
+              "Click on a code block to select it.", None
+        let body = defaultArg body (h?span [ "class" => "text" ] [ text msg ])
+        yield h?div [ "class" => "header" ] [ 
+          h.anim "psh" (hash ctx.State.SelectedPath) <| h?span [] 
+            (printPathReference "selected" ctx.State.SelectedPath)
+        ]
+        yield h?div [ "class" => "body" ] [ 
+          h.anim "psb" (hash msg) <| h?div [] [
+            h?span [ "class" => "text" ] [ body ] ]
+        ]
+      ]
     ]
 
   h?table [
       "class" => "split"
       "click" =!> fun _ e -> e.cancelBubble <- true; trigger (CodeEvent(Select(None)))
-    ] [ h?tr [] [ h?td [] [ code ]; h?td [] [ preview ] ] ]
-(*
-  { Source : list<Reference * Expr>
-    Values : Map<Reference, int * Value>
-    Arguments : Map<string, Reference> option
-    Counter : int
-    Completions : (Reference * ((string * Completion) list)) option }
-  []
-*)
+    ] [ h?tr [] [ h?td ["class" => "code"] [ code ]; h?td ["class" => "preview"] [ preview ] ] ]
 
 module Serializer =
   let createObj = Fable.Core.JsInterop.createObj
@@ -910,6 +967,7 @@ module Serializer =
     | SelectMenu(Some n) -> createObj [ "kind" => "menu"; "selected" => n ]
 
   let serializeEvent = function
+    | Caption(n, s) -> createObj [ "kind" => "caption"; "number" => n; "text" => s ]
     | Interact i -> createObj [ "kind" => "interact"; "interaction" => serializeInteraction i ]
     | CodeEvent c -> createObj [ "kind" => "code"; "event" => serializeCodeEvent c ]
     | Backward -> createObj [ "kind" => "backward" ]
@@ -958,6 +1016,7 @@ module Serializer =
 
   let deserializeEvent obj =
     match obj?kind with
+    | "caption" -> Caption(obj?number, obj?text)
     | "interact" -> Interact (deserializeInteraction obj?interaction)
     | "code" -> CodeEvent(deserializeCodeEvent obj?event) 
     | "backward" -> Backward
@@ -1004,8 +1063,27 @@ let view events trigger state =
     *)
     renderText trigger state
     //renderSheet trigger state
-    renderSource events state
+    //renderSource events state
   ]
+
+let viewScrolly _ trigger state = 
+  h?div [] [
+    h?div [ "class" => "row" ] [
+      h?div [ "class" => "col-sm-12 interactive" ] [
+        renderText trigger state
+      ] 
+    ] 
+    h?div [ "class" => "row" ] [
+      h?div [ "class" => "col-sm-7 large-caption" ] [
+        match state.Caption with 
+        | Some (n, s) ->
+            yield h?span [ "class" => "num" ] [ h?span [] [ text (string n) ] ]  
+            for p in s.Split('\n') -> h?p [] [ text p ]
+        | _ -> ()
+      ] 
+    ] 
+  ]
+
 
 
 // ------------------------------------------------------------------------------------------------
@@ -1046,7 +1124,10 @@ let rowValue headers values =
       member x.Hash = hash data
       member x.Data = values
       member x.Headers = headers
-      member x.Preview _ = renderTable [ for (k, _), v in data -> k ] [[ for k, v in data -> v ]]
+      member x.Preview(_) = 
+        sprintf "Block is a record with %d attributes." headers.Length,
+        Some (renderTable [ "attribute"; "value" ] [ for (k, _), v in data -> [k; v] ])
+
       member x.Lookup m =
         if m = "lookup" then OperationValue(None, fun [PrimitiveValue m] -> async {
           return data |> Seq.pick (fun (k, v) -> if k = unbox m then Some(PrimitiveValue v) else None) })
@@ -1070,11 +1151,9 @@ let frameValue (data:string[][]) =
       { new FrameObjectValue with
         member x.Headers = headers
         member x.Hash = hash [for _, (ObjectValue r) in rows -> r.Hash ]
-        member x.Preview _ =
-          h?div [] [
-            h?p [] [ text (sprintf "Table with %d rows" rows.Length)]
-            renderTable [ for k, _ in headers -> k ] (Seq.truncate 200 [for a, _ in rows -> a])
-          ]
+        member x.Preview(_) =
+          sprintf "Block is a table with %d rows." rows.Length,
+          Some (renderTable [ for k, _ in headers -> k ] (Seq.truncate 200 [for a, _ in rows -> a]))
         member x.Lookup m =
           if m = "at" then OperationValue(None, function
             | [PrimitiveValue n] -> async.Return(snd rows.[unbox n])
@@ -1104,7 +1183,7 @@ let frameValue (data:string[][]) =
               { new FrameObjectValue with
                 member y.Headers = x.Headers
                 member y.Hash = x.Hash
-                member y.Preview a = x.Preview a
+                member y.Preview(a) = x.Preview(a)
                 member x.Lookup m =
                   let asc = m.EndsWith(" ascending")
                   let m = m.Replace(" ascending", "").Replace(" descending", "")
@@ -1143,8 +1222,9 @@ let data files = async {
   let value =
     { new ObjectValue with
       member x.Hash = hash files
-      member x.Preview _ =
-        h?ul [] [
+      member x.Preview(_) =
+        "data source",
+        Some <| h?ul [] [
           for k, file in files -> h?li [] [ h?strong [] [ text k ]; text (sprintf " (%s)" file) ]
         ]
       member x.Lookup m =
@@ -1169,7 +1249,7 @@ let rec barChartType =
 let rec barChartValue (rows:RowObjectValue list) =
   { new ObjectValue with
     member x.Hash = 0
-    member x.Preview _ =
+    member x.Preview(_) =
       let colors = Seq.initInfinite (fun _ ->
         [ "#1f77b4"; "#ff7f0e"; "#2ca02c"; "#d62728"; "#9467bd";
           "#8c564b"; "#e377c2"; "#7f7f7f"; "#bcbd22"; "#17becf"; ]) |> Seq.concat
@@ -1188,7 +1268,8 @@ let rec barChartValue (rows:RowObjectValue list) =
           yield Shape.Style((fun s -> { s with Fill = Solid(1.0, HTML clr) }), bar n)
         ]
       let viz = Shape.Axes(false, false, true, true, viz)
-      Compost.createSvg false false (500., 500.) viz
+      "chart", 
+      Some (Compost.createSvg false false (500., 500.) viz)
     member x.Lookup n =
       if n = "add series" then OperationValue(None, fun [ObjectValue row] -> async {
         return barChartValue [ yield! rows; yield row :?> RowObjectValue] })
@@ -1198,7 +1279,7 @@ let rec barChartValue (rows:RowObjectValue list) =
 let chart =
   { new ObjectValue with
     member x.Hash = 0
-    member x.Preview _ = h?div [] []
+    member x.Preview(_) = "chart", None
     member x.Lookup m =
       if m = "bar" then OperationValue(None, fun [ObjectValue row] -> async {
         return barChartValue [row :?> RowObjectValue] })
@@ -1213,175 +1294,148 @@ let createScrolly id stepHeight stepCount trigger =
   let stepHeight, stepCount = float stepHeight, float stepCount
   let s = Browser.document.getElementById(id)
   let sb = Browser.document.getElementById(id + "-body")
-  let hgt = Browser.window.innerHeight + stepHeight * stepCount
-  s.style.height <- (string hgt) + "px"
+  let mutable lastStep = -1
 
-  let old = Browser.window.onscroll
-  Browser.window.onscroll <- fun e ->
-    if unbox old <> null then old(e)
-    if Browser.window.scrollY < s.offsetTop then
+  let resize () =
+    let hgt = Browser.window.innerHeight + stepHeight * stepCount
+    s.style.height <- (string hgt) + "px"
+
+  let update () = 
+   if Browser.window.scrollY < s.offsetTop then
       sb.style.position <- "relative"
       sb.style.top <- "0px"
+      if lastStep <> 0 then trigger 0
+      lastStep <- -1
     elif Browser.window.scrollY > s.offsetTop + (stepHeight * stepCount) then
       sb.style.position <- "relative"
       sb.style.top <- string (stepHeight * stepCount) + "px"
+      if lastStep <> int stepCount - 1 then trigger (int stepCount - 1)
+      lastStep <- -1
     else
       let step = int ((Browser.window.scrollY - s.offsetTop) / stepHeight)
-      trigger step
-      sb.style.position <- "fixed"
-      sb.style.top <- "0px"
-      sb.style.width <- "100vw"
-      sb.style.height <- (string Browser.window.innerHeight) + "px"
+      if step <> lastStep then
+        lastStep <- step
+        trigger step
+        sb.style.position <- "fixed"
+        sb.style.top <- "0px"
+        sb.style.width <- "100vw"
+        sb.style.height <- (string Browser.window.innerHeight) + "px"
 
-let images = Array.init 23 (fun i -> 
+  update()
+  resize() 
+  
+  let oldresize = Browser.window.onresize
+  Browser.window.onresize <- fun e ->
+    if unbox oldresize <> null then oldresize(e)
+    resize ()
+
+  let oldscroll = Browser.window.onscroll
+  Browser.window.onscroll <- fun e ->
+    if unbox oldscroll <> null then oldscroll(e)
+    update ()
+    
+let images = Array.init 24 (fun i -> 
   let img = Browser.Image.Create()
   img.src <- "screens/jupyter/frame" + (i+1).ToString().PadLeft(3,'0') + ".png"
   img )
 
-let captions = 
-  let caps = Browser.document.getElementById("screen1-captions").innerText.Split([|'\r';'\n'|], System.StringSplitOptions.RemoveEmptyEntries)
-  [| for cap in caps -> let r = cap.Split(':') in int r.[0], r.[1].Trim() |]
+let readCaptions id = 
+  let caps = Browser.document.getElementById(id).innerText.Trim(' ', '*', '/')
+  let caps = caps.Split([|'\r';'\n'|], System.StringSplitOptions.RemoveEmptyEntries)
+  [| for i, cap in Seq.indexed caps -> 
+       let r = cap.Split(':')
+       int r.[0], sprintf "<span class='num'><span>%d</span></span><p>%s</p>" (i+1) (r.[1].Trim()) |]
 
-createScrolly "screen1" 100 23 (fun i ->
-  let img = Browser.document.getElementById("screen1-frame")
-  (unbox<Browser.HTMLImageElement> img).src <- images.[i].src
+
+let imga = Browser.document.getElementById("screen1-frame-a")
+let imgb = Browser.document.getElementById("screen1-frame-b")
+let mutable imgs = unbox<Browser.HTMLImageElement> imga, unbox<Browser.HTMLImageElement> imgb
+let captions = readCaptions "screen1-captions"
+createScrolly "screen1" 50 24 (fun i ->
+  let iprev, inext = imgs
+  inext.src <- images.[i].src
+  iprev.className <- "frame-out"
+  inext.className <- "frame-in"
+  imgs <- inext, iprev
   let cap = Browser.document.getElementById("screen1-caption")
-  cap.innerText <- captions |> Seq.takeWhile (fun (ci, _) -> ci <= i) |> Seq.last |> snd  
+  cap.innerHTML <- captions |> Seq.takeWhile (fun (ci, _) -> ci <= i) |> Seq.last |> snd  
 )
 
-Async.StartImmediate <| async {
+module Showdown = 
+  let (?) = JsInterop.(?)
+  type IConverter = 
+    abstract makeHtml : string -> string
+  [<Import("Converter", "showdown")>]
+  let converterProto : IConverter = jsNative
+  let converter : IConverter = JsInterop.createNew converterProto () |> unbox
+
+let stripSpaces (md:string) =
+  let lines = md.Split([| '\r'; '\n' |])
+  let spaces = lines |> Seq.filter (System.String.IsNullOrWhiteSpace >> not) |> Seq.map (fun line ->
+    line.Length - line.TrimStart(' ').Length) |> Seq.min
+  lines |> Seq.map (fun s -> if s.Length > spaces then s.Substring(spaces) else s) |> String.concat "\n"
+
+let mdElements = Browser.document.getElementsByClassName("markdown")
+let reg = System.Text.RegularExpressions.Regex("\$([^\$]*)\$")
+for i in 0 .. int mdElements.length - 1 do
+  let el = mdElements.[i]
+  let html = Showdown.converter.makeHtml(stripSpaces(el.innerHTML.Replace("&gt;",">")))
+  let html = reg.Replace(html, fun m -> "\(" + m.Value.Trim('$') + "\)")
+  el.innerHTML <- html.Replace("--", "&ndash;")
+
+let latexElements = Browser.document.getElementsByClassName("mathjax")
+for i in 0 .. int latexElements.length - 1 do
+  let el = latexElements.[i] |> unbox<Browser.HTMLElement>
+  el.parentElement.outerHTML <- "<div class='mathjax'>\(" + el.innerText + "\)</div>"
+
+let createEvalAgent initial (events:_[]) = MailboxProcessor<_ * AsyncReplyChannel<_>>.Start(fun inbox -> async {
+  let cache = System.Collections.Generic.Dictionary<_, _>()
+  cache.[0] <- initial
   try
-    let! data = data [ "aviation", "data/avia.csv"; "rail", "data/rail.csv" ]
-    let external = [ "data", data; "chart", chart ]
-    let initial =
-      { Arguments = None
-        External = Map.ofList external
-        Values = Map.empty
-        Counter = 0
-        Source = [] } // for n, _ in external -> Named n, External n ] }
-        (*
-    let prog = []
-    let _prog = Serializer.deserializeProgram """
-      [ {"kind":"value","value":2500,"type":"number"},
-        {"kind":"dot","reference":"data","member":"aviation"},
-        {"kind":"name","reference":1,"name":"avia"},
-        {"kind":"dot","reference":"avia","member":"at"},
-        {"kind":"apply","operation":2,"arguments":[["index",0]]},
-        {"kind":"evaluate","reference":"avia"},
-        {"kind":"dot","reference":3,"member":"victim"},
-        {"kind":"value","value":"KIL","type":"string"},
-        {"kind":"dot","reference":4,"member":"equals"},
-        {"kind":"apply","operation":6,"arguments":[["other",5]]},
-        {"kind":"evaluate","reference":7},
-        {"kind":"abstract","arguments":[3],"output":7},
-        {"kind":"dot","reference":"avia","member":"filter"},
-        {"kind":"apply","operation":9,"arguments":[["predicate",8]]},
-        {"kind":"dot","reference":7,"member":"and"},
-        {"kind":"dot","reference":3,"member":"geo"},
-        {"kind":"dot","reference":12,"member":"not equals"},
-        {"kind":"value","value":"EU28","type":"string"},
-        {"kind":"apply","operation":13,"arguments":[["other",14]]},
-        {"kind":"apply","operation":11,"arguments":[["other",15]]},
-        {"kind":"abstract","arguments":[3],"output":16},
-        {"kind":"apply","operation":9,"arguments":[["predicate",17]]},
-        {"kind":"evaluate","reference":18},
-        {"kind":"dot","reference":"data","member":"rail"},
-        {"kind":"evaluate","reference":19},
-        {"kind":"dot","reference":19,"member":"at"},
-        {"kind":"apply","operation":20,"arguments":[["index",0]]},
-        {"kind":"evaluate","reference":21},
-        {"kind":"dot","reference":21,"member":"victim"},
-        {"kind":"dot","reference":22,"member":"equals"},
-        {"kind":"apply","operation":23,"arguments":[["other",5]]},
-        {"kind":"dot","reference":24,"member":"and"},
-        {"kind":"dot","reference":21,"member":"accident"},
-        {"kind":"evaluate","reference":26},
-        {"kind":"value","value":"TOTAL","type":"string"},
-        {"kind":"dot","reference":26,"member":"equals"},
-        {"kind":"apply","operation":28,"arguments":[["other",27]]},
-        {"kind":"apply","operation":25,"arguments":[["other",29]]},
-        {"kind":"name","reference":19,"name":"rail"},
-        {"kind":"dot","reference":21,"member":"pers_inv"},
-        {"kind":"dot","reference":31,"member":"equals"},
-        {"kind":"apply","operation":32,"arguments":[["other",27]]},
-        {"kind":"dot","reference":30,"member":"and"},
-        {"kind":"apply","operation":34,"arguments":[["other",33]]},
-        {"kind":"dot","reference":21,"member":"geo"},
-        {"kind":"dot","reference":36,"member":"not equals"},
-        {"kind":"apply","operation":37,"arguments":[["other",14]]},
-        {"kind":"dot","reference":35,"member":"and"},
-        {"kind":"apply","operation":39,"arguments":[["other",38]]},
-        {"kind":"abstract","arguments":[21],"output":40},
-        {"kind":"dot","reference":"rail","member":"filter"},
-        {"kind":"apply","operation":42,"arguments":[["predicate",41]]},
-        {"kind":"evaluate","reference":43},
-        {"kind":"dot","reference":18,"member":"sum"},
-        {"kind":"dot","reference":43,"member":"sum"},
-        {"kind":"evaluate","reference":44},
-        {"kind":"evaluate","reference":45},
-        {"kind":"name","reference":45,"name":"rail sums"},
-        {"kind":"name","reference":44,"name":"avia sums"},
-        {"kind":"dot","reference":"chart","member":"bar"},
-        {"kind":"apply","operation":46,"arguments":[["data","avia sums"]]},
-        {"kind":"evaluate","reference":47},
-        {"kind":"apply","operation":46,"arguments":[["data","rail sums"]]},
-        {"kind":"evaluate","reference":48},
-        {"kind":"dot","reference":47,"member":"add series"},
-        {"kind":"apply","operation":49,"arguments":[["data","rail sums"]]},
-        {"kind":"evaluate","reference":50} ]"""
-    let _prog =
-      [ DefineValue (PrimitiveValue 2500,PrimitiveType "number")
-        Complete (Dot (Named "data","aviation"))
-        Name(Indexed 1, "avia")
-        Complete (Dot (Named "avia","at"))
-        Complete (Apply (Indexed 2,"index",Indexed 0))
-        Evaluate (Named "avia")
-        Complete (Dot (Indexed 3,"victim"))
-        DefineValue (PrimitiveValue "KIL",PrimitiveType "string")
-        Complete (Dot (Indexed 4,"equals"))
-        Complete (Apply (Indexed 6,"other",Indexed 5))
-        Evaluate (Indexed 7)
-        Abstract ([Indexed 3],Indexed 7)
-        Complete (Dot (Named "avia","filter"))
-        Complete (Apply (Indexed 9,"predicate",Indexed 8))
-      ]
-    //let code = prog |> List.fold apply initial
-    *)
-    let initial =
-      { Initial = initial; Code = initial; Program = []; CurrentFunction = None; Forward = [];
-        CurrentValue = None; CurrentName = None; CurrentReplace = None; CurrentCompletions = None
-        CodeState = { SelectedPath = None; HighlightedPath = None; SelectedMenuItem = None } }
-    let setState = createVirtualDomAsyncApp "out" initial view update
+    while true do
+      let! i, repl = inbox.Receive()
+      let lastComputed = [i .. -1 .. 0] |> Seq.find (fun i -> printfn "checking %d: %b" i (cache.ContainsKey i); cache.ContainsKey i)
+      for i in lastComputed+1 .. i do
+        printfn "evaluating: %d, %s" i (Fable.Import.JS.JSON.stringify (Serializer.serializeEvent events.[i-1]))
+        let! next = update cache.[i-1] events.[i-1] // cache[1] = update cache[0] events[0]
+        cache.[i] <- next
+        printfn "evaluating: %d (done)" i
+      repl.Reply(cache.[i])
+  with e ->
+    Browser.console.error("Agent failed: %O", e)
+  })
 
+let initialize () = async {
+  let! data = data [ "aviation", "data/avia.csv"; "rail", "data/rail.csv" ]
+  let external = [ "data", data; "chart", chart ]
+  let initialCode =
+    { Arguments = None; External = Map.ofList external; Values = Map.empty
+      Counter = 0; Source = [] } 
+  let initial =
+    { Initial = initialCode; Code = initialCode; Program = []; CurrentFunction = None; Forward = []; Caption = None
+      CurrentValue = None; CurrentName = None; CurrentReplace = None; CurrentCompletions = None
+      CodeState = { SelectedPath = None; HighlightedPath = None; SelectedMenuItem = None } }
+  return initial }
 
-    let createEvalAgent (events:_[]) = MailboxProcessor<_ * AsyncReplyChannel<_>>.Start(fun inbox -> async {
-      let cache = System.Collections.Generic.Dictionary<_, _>()
-      cache.[0] <- initial
-      try
-        while true do
-          let! i, repl = inbox.Receive()
-          let lastComputed = [i .. -1 .. 0] |> Seq.find (fun i -> printfn "checking %d: %b" i (cache.ContainsKey i); cache.ContainsKey i)
-          for i in lastComputed+1 .. i do
-            printfn "evaluating: %d, %s" i (Fable.Import.JS.JSON.stringify (Serializer.serializeEvent events.[i-1]))
-            let! next = update cache.[i-1] events.[i-1] // cache[1] = update cache[0] events[0]
-            cache.[i] <- next
-            printfn "evaluating: %d (done)" i
-          repl.Reply(cache.[i])
-      with e ->
-        Browser.console.error("Agent failed: %O", e)
-      })
-
-    let events =
-      Browser.document.getElementById("scrolly1-source").innerText
-      |> Serializer.deserializeEvents 
-
-    let agent = createEvalAgent events
-    createScrolly "scrolly1" 100 events.Length (fun i -> Async.StartImmediate <| async {
-      let! state = agent.PostAndAsyncReply(fun ch -> i, ch)
+let createInteractive initial id = async {
+  try
+    let setState = createVirtualDomAsyncApp (id + "-out") initial viewScrolly update
+    let codeScript = Browser.document.getElementById(id + "-source")
+    let events = codeScript.innerText |> Serializer.deserializeEvents 
+    let skipEvents = int (codeScript.dataset.["skipEvents"])
+    
+    let agent = createEvalAgent initial events
+    printfn "%s has %d events" id events.Length
+    createScrolly id 50 (events.Length - skipEvents) (fun i -> Async.StartImmediate <| async {
+      let! state = agent.PostAndAsyncReply(fun ch -> i + skipEvents, ch)
       setState state
     })
   with e ->
     Browser.console.error(e)
 }
 
-
+Async.StartImmediate <| async {
+  let! initial = initialize ()
+  do! createInteractive initial "scrolly1"
+  do! createInteractive initial "scrolly2"
+}
