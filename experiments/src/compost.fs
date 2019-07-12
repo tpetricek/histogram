@@ -391,37 +391,37 @@ module Scales =
         let LineStyle clr alpha width shape = 
           Style((fun s -> { s with Fill = Solid(1.0, HTML "transparent"); StrokeWidth = Pixels width; StrokeColor=alpha, HTML clr }), shape)
         let FontStyle style shape = 
-          Style((fun s -> { s with Font = style; Fill = Solid(1.0, HTML "black"); StrokeColor = 0.0, HTML "transparent" }), shape)
+          Style((fun s -> { s with Font = style; Fill = Solid(1.0, HTML "#c0c0c0"); StrokeColor = 0.0, HTML "transparent" }), shape)
 
         let shape = 
           Layered [ 
             for x in generateAxisSteps sx do
-              yield Line [x,ly; x,hy] |> LineStyle "#e4e4e4" 1.0 1
+              yield Line [x,ly; x,hy] |> LineStyle "#484848" 1.0 1
             for y in generateAxisSteps sy do
-              yield Line [lx,y; hx,y] |> LineStyle "#e4e4e4" 1.0 1 
+              yield Line [lx,y; hx,y] |> LineStyle "#484848" 1.0 1 
             if showTop then
-              yield Line [lx,hy; hx,hy] |> LineStyle "black" 1.0 2
+              yield Line [lx,hy; hx,hy] |> LineStyle "white" 1.0 2
               for x, l in generateAxisLabels style.FormatAxisXLabel sx do
-                yield Offset((0., -15.), Text(x, hy, VerticalAlign.Baseline, HorizontalAlign.Center, 0.0, l)) |> FontStyle "9pt sans-serif"
+                yield Offset((0., -15.), Text(x, hy, VerticalAlign.Baseline, HorizontalAlign.Center, 0.0, l)) |> FontStyle "8pt sans-serif" 
             if showRight then
-              yield Line [hx,hy; hx,ly] |> LineStyle "black" 1.0 2
+              yield Line [hx,hy; hx,ly] |> LineStyle "white" 1.0 2
               for y, l in generateAxisLabels style.FormatAxisYLabel sy do
-                yield Offset((15., 0.), Text(hx, y, VerticalAlign.Middle, HorizontalAlign.Start, 0.0, l)) |> FontStyle "9pt sans-serif"
+                yield Offset((15., 0.), Text(hx, y, VerticalAlign.Middle, HorizontalAlign.Start, 0.0, l)) |> FontStyle "8pt sans-serif"
             if showBottom then
-              yield Line [lx,ly; hx,ly] |> LineStyle "black" 1.0 2
+              yield Line [lx,ly; hx,ly] |> LineStyle "#c0c0c0" 1.0 2
               for x, l in generateAxisLabels style.FormatAxisXLabel sx do
-                yield Offset((0., 15.), Text(x, ly, VerticalAlign.Hanging, HorizontalAlign.Center, 0.0, l)) |> FontStyle "9pt sans-serif"
+                yield Offset((0., 15.), Text(x, ly, VerticalAlign.Hanging, HorizontalAlign.Center, 0.0, l)) |> FontStyle "8pt sans-serif"
             if showLeft then
-              yield Line [lx,hy; lx,ly] |> LineStyle "black" 1.0 2
+              yield Line [lx,hy; lx,ly] |> LineStyle "#c0c0c0" 1.0 2
               for y, l in generateAxisLabels style.FormatAxisYLabel sy do
-                yield Offset((-15., 0.), Text(lx, y, VerticalAlign.Middle, HorizontalAlign.End, 0.0, l)) |> FontStyle "9pt sans-serif"
+                yield Offset((-15., 0.), Text(lx, y, VerticalAlign.Middle, HorizontalAlign.End, 0.0, l)) |> FontStyle "8pt sans-serif"
             yield shape ] |> calculateScales
 
         match shape with 
         | Scaled(_, _, ScaledLayered(shapes)) ->
             let padding = 
-              (if showTop then 40. else 0.), (if showRight then 70. else 0.),
-              (if showBottom then 40. else 0.), (if showLeft then 70. else 0.) 
+              (if showTop then 40. else 10.), (if showRight then 50. else 0.),
+              (if showBottom then 40. else 0.), (if showLeft then 50. else 0.) 
             Scaled(origScales, origScales, 
               ScaledPadding(padding, 
                 Scaled(origScales, origScales, 
