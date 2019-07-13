@@ -308,12 +308,12 @@ let renderTable headers data =
     h?table ["class"=>"data"] [
       h?thead [] [
         h?tr [] [
-          for hd in headers -> h?th [] [ text (string hd) ]
+          for hd in headers -> h?th [] (hd)
         ]
       ]
       h?tbody [] [
         for row in data -> h?tr [] [
-          for col in row -> h?td [] [ text (string col) ]
+          for col in row -> h?td [] col
         ]
       ]
     ]
@@ -1298,7 +1298,7 @@ let rowValue headers values =
       member x.Headers = headers
       member x.Preview(_) = 
         sprintf "Block is a record with %d attributes." headers.Length,
-        Some (renderTable [ "attribute"; "value" ] [ for (k, _), v in data -> [k; v] ])
+        Some (renderTable [ [text "attribute"]; [text "value"] ] [ for (k, _), v in data -> [[text k]; [text v]] ])
 
       member x.Lookup m =
         if m = "lookup" then OperationValue(None, fun [PrimitiveValue m] -> async {
@@ -1324,8 +1324,44 @@ let frameValue (data:string[][]) =
         member x.Headers = headers
         member x.Hash = hash [for _, (ObjectValue r) in rows -> r.Hash ]
         member x.Preview(_) =
+
+          let theaders = 
+            [ yield [ text "#" ]
+              for k, _ in headers -> [
+                text k
+                h?i [ 
+                  "class" => "fa fa-sort-up"
+                  "click" =!> fun e _ -> Browser.window.alert("up " + k) ] []
+                h?i [ 
+                  "class" => "fa fa-sort-down"
+                  "click" =!> fun e _ -> Browser.window.alert("down " + k) ] [] ] ]
+
+          let tbody =          
+            [ yield [ 
+                yield [ h?i ["class" => "fa fa-filter"] [] ]
+                for i, (k, _) in Seq.indexed headers -> [ h?select [
+                    "change" =!> fun e _ -> Browser.window.alert(unbox<Browser.HTMLSelectElement>(e).value)
+                    "mousedown" =!> fun e _ ->
+                      if e.children.length = 1. then
+                        for v in rows |> Seq.map (fun (r, _) -> r.[i]) |> Seq.distinct do
+                          let o1 = Browser.document.createElement_option()
+                          o1.value <- "=" + v
+                          o1.innerText <- "equals " + v
+                          let o2 = Browser.document.createElement_option()
+                          o2.value <- "!" + v
+                          o2.innerText <- "not equals " + v
+                          e.appendChild(o1) |> ignore
+                          e.appendChild(o2) |> ignore
+                  ] [
+                    h?option ["value" => ""]  [ text "all" ]
+                  ] ] ]
+              for i, (a, _) in Seq.indexed (Seq.truncate 200 rows) -> [
+                yield [ text (string i) ]
+                for v in a -> [ text v ] ] ]
+
           sprintf "Block is a table with %d rows." rows.Length,
-          Some (renderTable [ for k, _ in headers -> k ] (Seq.truncate 200 [for a, _ in rows -> a]))
+          Some (renderTable theaders tbody)
+
         member x.Lookup m =
           if m = "at" then OperationValue(None, function
             | [PrimitiveValue n] -> async.Return(snd rows.[unbox n])
@@ -1360,7 +1396,10 @@ let frameValue (data:string[][]) =
                   let asc = m.EndsWith(" ascending")
                   let m = m.Replace(" ascending", "").Replace(" descending", "")
                   let index = headers |> Array.findIndex (fun (h, _) -> h = m)
-                  let sort = if asc then Array.sortBy else Array.sortByDescending
+                  let isNumeric = snd headers.[index] = PrimitiveType "number"
+                  let sort f = 
+                    if isNumeric then (if asc then Array.sortBy (f >> float) else Array.sortByDescending (f >> float))
+                    else (if asc then Array.sortBy f else Array.sortByDescending f)
                   rows |> sort (fun (data, _) -> data.[index]) |> v }
             ObjectValue(fov :> ObjectValue)
 

@@ -345,7 +345,17 @@ killed in the [Germanwings Fligth 9525 crash](https://en.wikipedia.org/wiki/Germ
   {"kind":"nohighlight"}
 ]</script>
 
-<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
+<div class="container"><div class="row">
+<div class="col-sm-12 col-lg-4 col-xl-3 offset-xl-1 order-lg-last markdown">
+
+> **Try it yourself.**
+If you want to explore the environment on your own, try loading a data file
+`data/rail.csv` which contains similar data on rail accidents. You can compare the
+number of rail passengers killed in France and Germany by looking at two rows at
+indices 3025 and 3018, respectively.
+
+</div>
+<div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
 The demo shows a number of important points about the Histogram programming environment.
 First, the program is displayed in a way that looks much like textual source code, but the program
@@ -729,7 +739,7 @@ want to let programmers introduce custom operations or _function values_.
 <div class="container"><div class="row">
 <div class="col-sm-12 col-lg-4 col-xl-3 offset-xl-1 order-lg-last markdown">
 
-> **Try it yourself!**
+> **Try it yourself.**
 In the demo, we use the function as an argument to `filter`, but you can also give it a name and
 call it directly. To do this, click on the `fun v ->` block, select "name" from the auto-complete
 list and enter a name for the function. If you then click on `fun v ->` (again), you should
@@ -748,8 +758,8 @@ result and then choose an input from an auto-complete list. The list shows refer
 code blocks that the function depends on. Those are displayed either as name (e.g. `sampleRow`)
 when the reference is named or as inline code snippet for anonymous references.
 
-We will discuss how the code-like view of Histogram programs works in detail later. However,
-when displaying a function, we display its body and replace the input reference with a variable
+We will discuss how the code-like view of Histogram programs works in more detail in the next section.
+However, when displaying a function, we display its body and replace the input reference with a variable
 name such as `v`. This is familiar to expert programmers, but it is not how functions are
 represented internally -- the $\text{abstract}$ interaction does not copy the body of the
 function (as extract function refactoring would). It merely records the references of its inputs
@@ -757,10 +767,81 @@ and output. The concrete input values are also not lost. We can select and evalu
 the body of the function and we get a value computed based on the inputs that we used when
 constructing the body of the function.
 
-<h2>User interface fun</h2>
+</div></div>
+<div class="row align-items-end"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
-<h3>Multiple views</h3>
-how we render things with named and indexed references
+**Environments**: Two ways of looking at programs
+------------------------------------------------
+
+Earlier in this essay, we discussed how data analysts use Jupyter notebooks to write Python
+code. However, a lot of simpler data analytical tasks are done using spreadsheet systems like
+Excel. On one hand, spreadsheets are extremely easy to use for simple tasks, but they are limited
+in what they can do. On the other hand, you can do almost anything in a Jupyter notebook, but
+even a simple language like Python requires significant programming skills. There is a _tooling
+gap_ between spreadsheets and programming tools, meaning that one cannot easily transition from
+one to the other. The approach that we use in Histogram has a potential to bridge this gap.
+
+### Editing Histogram programs as code
+
+The Histogram language does not have a fixed syntax. Programs are represented as lists of
+interactions. It is not expected that programmers will directly write such lists. Instead, we
+typically work with a state that maps _references_ to _values_ or _formulas_. Such state is
+obtained by applying individual interactions to an initial empty state.
+
+In the above demos, we used a Histogram programming environment that displays the current state
+as source code and lets you add new interactions through a mechanism akin to auto-complete.
+As we will see in the next demo, this is not the only possible way of displaying Histogram
+programs, but first we discuss how the earlier code-like environment works.
+
+As discussed earlier, the Histogram program state is a mapping from references to formulas
+and optional values for those references that have been evaluated. A formula can be a member
+access or an invocation. Importantly, all arguments of a formula are represented as references
+and so the representation of formulas in the state is not recursive. When displaying the state
+as code, we turn the flat _formulas_ into recursive _expressions_ as follows:
+
+ - We construct an expression for all references that are either named (represented as a
+   `let` binding) or references that are not referenced by any other formula in the state
+   (represented as `do[n]` bindings where `n` is the index of the reference).
+
+ - When doing the above, we do not look inside functions, so a formula that is used as part
+   of a function will also appear independently, outside of the expression that represents
+   the functoion.
+
+ - To construct an expression from a formula, we follow the references inside a formula.
+   We display named references as variables and we follow indexed references recursively
+   and inline their formula in the place where they are used.
+
+One consequence of the above approach is that formulas that are not named may appear multiple
+times in the displayed source code. You can see this in the previous demo in step 4 -- when
+we access the `filter` operation on the expression `data.load("data/avia.csv")`, the expression
+that loads the data is duplicated. This is the same formula with the same reference but displayed
+in two different places. If you hover over it, you will see that the environment also highlights
+both of the occurences of the formula. The same happens when we hover over a formula inside a
+function, because those are also displayed twice. One interesting problem is how should the
+environment behave when the programmer starts editing formula that appears in multiple places.
+We return to this issue in the future work section.
+
+### Editing Histogram programs in a spreadsheet
+
+In the following demo, we construct the same program as above -- a visualization showing total
+number of deaths in air traffic accidents per year. This time, the analysis is done in a
+programming environment that looks more like a spreadsheet. To do this, we do not need to
+change the representation of Histogram programs. A program is still a list of interactions and
+a state is still mapping from references to formulas or values. We only change the way we
+display the state and the user interface through which interactions are triggered.
+
+Note that the following is still quite far from a traditional spreadsheet in two ways. First, cells
+in the table display formulas rather than values as a typical spreadsheet does. To see a value,
+you have to click on a cell and look at the preview panel. Second, the locations of formulas
+in the spreadsheet is determined automatically and a user cannot move them. We discuss ways of
+addressing those limitations in the future work section. That said, our current limited prototype
+is a first step towards closing the gap between spreadsheets and programming tools.
+
+</div><div class="col-sm-12 col-md-11 col-lg-4 col-xl-3 offset-xl-1 markdown">
+
+> **How does it work?** Each formula is located in a single cell. References are displayed as
+spreadsheet-like references on a two-dimensional grid. The spreadsheet shows code, while panels on
+the right display values and let you interact with the system.
 
 </div></div></div>
 
@@ -776,7 +857,7 @@ how we render things with named and indexed references
 </div>
 </div></div>
 
-<script type="text/histgram" id="scrolly3-source" data-skip-events="1">
+<script type="text/histgram" id="scrolly3-source" data-skip-events="150">
 [
   {"kind":"caption","number":1, "text":"We add new code to the spreadsheet by clicking on 'add code'. The completions panel lets us add built-in objects and create new values. Their location in the spreadsheet is determined automatically."},
   {"kind":"completions","reference":-1},
@@ -991,6 +1072,22 @@ how we render things with named and indexed references
 <h2>Type system</h2>
 <h3>Well constructed programs</h3>
 <h3>Dependent types</h3>
+
+Random thoughts
+-----------
+
+You cannot modify programs
+
+more spreadsheets - why not show table inline? indeed...
+
+experts want keyboards - doable, it's a bit like writing Coq proofs
+For example, we could provide a prompt similar to command line
+and let expert programmers who prefer keyboard add interactions by typing commands.
+
+Functions could be more like replaying commands
+
+You do not see the program itself in its environments, but you could
+
 
 References
 ----------
