@@ -227,7 +227,8 @@ let renderTo (node:HTMLElement) dom =
   f()
 
 let createVirtualDomAsyncApp id initial r u = 
-  let event = new Event<'T>()
+  let event = new Event<'E>()
+  let stateChanged = new Event<'S>()
   let trigger e = event.Trigger(e)  
   let mutable container = document.createElement("div") :> Node
   document.getElementById(id).innerHTML <- ""
@@ -236,24 +237,40 @@ let createVirtualDomAsyncApp id initial r u =
   let mutable state = initial
   let events = ResizeArray<_>()
   let cache = System.Collections.Generic.Dictionary<_, _>()
-
+  
   let setState newState = 
     state <- newState
+    stateChanged.Trigger state
     let newTree = r (events :> seq<_>) trigger state |> renderVirtual cache
     let patches = Virtualdom.diff tree newTree
     container <- Virtualdom.patch container patches
     tree <- newTree 
   
   setState initial
+  let mutable queue = []
+  let mutable running = false
   event.Publish.Add(fun e -> Async.StartImmediate <| async { 
     try
-      events.Add(e)
-      let! s = u state e
-      setState s 
+      //printfn "Adding to queue: %A" e
+      queue <- queue @ [e]
+      if running then () //printfn "Already processing."
+      else 
+        running <- true
+        //printfn "Processing events!"
+        while queue.Length > 0 do
+          let e = queue.Head
+          queue <- queue.Tail
+          //printfn "Process: %A" e
+          let! s = u trigger state e
+          events.Add(e)
+          setState s 
+          printfn "Done with: %A" e
+        //printfn "Finished processing."
+        running <- false
     with e ->
       Fable.Import.Browser.console.error(e)
     })
-  setState
+  trigger, setState, stateChanged.Publish
 
 
 let createVirtualDomApp id initial r u = 

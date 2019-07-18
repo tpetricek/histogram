@@ -216,24 +216,19 @@ killed in the [Germanwings Fligth 9525 crash](https://en.wikipedia.org/wiki/Germ
 
 > **How does it work?** The following section again uses scrollytelling, but it is also interactive.
 > You can just scroll down to replay the demo, but you can also stop at any point and interact
-> with the system on your own. If you do that, the auto-play will stop until you reset it, so
-> you will not lose your experiments.
+> with the system on your own. If you do that, the auto-play will stop until you reset it. To
+> do this, click the paperclip icon in the upper right corner.
 
 </div></div></div>
 
 <div class="demo" id="scrolly1" style="height:1500px"><div id="scrolly1-body" class="demo-body">
 <div class="container-fluid bigger-container">
-  <div class="row">
-    <div class="col-sm-10 demo-top">
-      <h2><strong>Demo:</strong> Interacting with the Histogram environment</h2>
-    </div>
-  </div>
   <div id="scrolly1-out">
   </div>
 </div>
 </div></div>
 
-<script type="text/histgram" id="scrolly1-source" data-skip-events="1">[
+<script type="text/histgram" id="scrolly1-source" data-skip-events="1" data-title="Interacting with the Histogram environment">[
   {"kind":"caption","number":1, "text":"We start with an empty program and define a new value to hold the name of our input file. To name the value, we choose the 'name' operation from an auto-complete list and enter the name for our variable."},
   {"kind":"completions","reference":-1},
   {"kind":"menu","selected":0},
@@ -452,17 +447,12 @@ want to let programmers introduce custom operations or _function values_.
 
 <div class="demo" id="scrolly2" style="height:1200px"><div id="scrolly2-body" class="demo-body">
 <div class="container-fluid bigger-container">
-  <div class="row">
-    <div class="col-sm-10 demo-top">
-      <h2><strong>Demo:</strong> Turning formulas into reusable functions</h2>
-    </div>
-  </div>
   <div id="scrolly2-out">
   </div>
 </div>
 </div></div>
 
-<script type="text/histgram" id="scrolly2-source" data-skip-events="70">
+<script type="text/histgram" id="scrolly2-source" data-skip-events="70" data-title="Turning formulas into reusable functions">
 [
   {"kind":"completions","reference":-1},
   {"kind":"menu","selected":0},
@@ -847,17 +837,12 @@ the right display values and let you interact with the system.
 
 <div class="demo" id="scrolly3" style="height:1200px"><div id="scrolly3-body" class="demo-body">
 <div class="container-fluid bigger-container">
-  <div class="row">
-    <div class="col-sm-10 demo-top">
-      <h2><strong>Demo:</strong> Editing Histogram programs in a spreadsheet</h2>
-    </div>
-  </div>
   <div id="scrolly3-out">
   </div>
 </div>
 </div></div>
 
-<script type="text/histgram" id="scrolly3-source" data-skip-events="150">
+<script type="text/histgram" id="scrolly3-source" data-skip-events="1" data-title="Editing Histogram programs in a spreadsheet">
 [
   {"kind":"caption","number":1, "text":"We add new code to the spreadsheet by clicking on 'add code'. The completions panel lets us add built-in objects and create new values. Their location in the spreadsheet is determined automatically."},
   {"kind":"completions","reference":-1},
@@ -1068,6 +1053,10 @@ the right display values and let you interact with the system.
 <div class="container"><div class="row">
 <div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
+note on function values - appy cell is displayed differently...
+
+
+
 <h3>Binding actions to UI elements</h3>
 <h2>Type system</h2>
 <h3>Well constructed programs</h3>
@@ -1088,6 +1077,10 @@ Functions could be more like replaying commands
 
 You do not see the program itself in its environments, but you could
 
+
+edit code - incomplete chains - we can keep the rest somewhere outside of program (we know it from history)
+
+"all the programming langauges have been invented already" - nope
 
 References
 ----------

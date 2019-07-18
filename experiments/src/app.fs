@@ -8,9 +8,14 @@ type Reference =
   | Named of string
   | Indexed of int
 
-type ObjectValue =
+type PreviewContext = 
+  { Reference : Reference 
+    Interact : Interaction -> Async<Reference option>
+    Select : Reference -> unit }
+
+and ObjectValue =
   abstract Lookup : string -> Value
-  abstract Preview : (unit -> unit) -> string * Tbd.Html.DomNode option
+  abstract Preview : PreviewContext -> string * Tbd.Html.DomNode option
   abstract Hash : int
 
 and Value =
@@ -18,7 +23,7 @@ and Value =
   | PrimitiveValue of obj
   | ObjectValue of ObjectValue
 
-type Expr =
+and Expr =
   | External of string
   | Value of Value * Type
   | Member of Reference * string
@@ -33,11 +38,11 @@ and Type =
   | OperationType of (string * Type) list * Type
   | ObjectType of ObjectType
 
-type Completion =
+and Completion =
   | Dot of Reference * string
   | Apply of Reference * string * Reference
 
-type Interaction =
+and Interaction =
   | Complete of Completion
   | Name of Reference * string
   | Evaluate of Reference
@@ -208,9 +213,9 @@ and typeCheck code (ref:Reference) =
   | typ -> typ
 
 let addExpression code nexpr =
-  { code with
-      Source = code.Source @ [ (Indexed code.Counter, nexpr) ]
-      Counter = code.Counter + 1 }
+  let ref = Indexed code.Counter
+  let newSource = code.Source @ [ (ref, nexpr) ]
+  Some ref, { code with Source = newSource; Counter = code.Counter + 1 }
 
 let getCompletions code ref =
   match typeCheck code ref with
@@ -240,7 +245,7 @@ let rec apply code interaction = async {
           |> List.map (fun (r, v) -> ReplaceValue(r, v, typeCheck code r))
         let mutable virtualCode = code
         for interaction in List.append replaces [ Evaluate(res) ] do
-          let! vc = apply virtualCode interaction
+          let! _, vc = apply virtualCode interaction
           virtualCode <- vc
         return virtualCode.Values.[res] |> snd })
       let argTys =
@@ -252,7 +257,7 @@ let rec apply code interaction = async {
   | ReplaceValue(ref, v, t) ->
       let nexpr = Value(v, t)
       let nsource = code.Source |> List.map (fun (r, e) -> if r = ref then r, nexpr else r, e)
-      return { code with Source = nsource }
+      return None, { code with Source = nsource }
 
   | DefineValue(v, t) ->
       return addExpression code (Value(v, t))
@@ -284,11 +289,11 @@ let rec apply code interaction = async {
         [ for (KeyValue(r, (n, v))) in code.Values ->
             (if r = ref then Named name else r),
             (n, substituteValueReference r (Named name) v) ] |> Map.ofList
-      return { code with Source = source; Values = values }
+      return Some(Named name), { code with Source = source; Values = values }
 
   | Evaluate(ref) ->
       let! _, values = evaluate code code.Values ref
-      return { code with Values = values } }
+      return None, { code with Values = values } }
 
 
 // ------------------------------------------------------------------------------------------------
@@ -336,15 +341,16 @@ type Model =
     HighlightedPath : Reference list option
     SelectedMenuItem : int option 
 
-    Caption : (int * string) option }
+    Caption : (int * string) option
+    Modified : bool }
 
 type Event =
   | Backward
   | Forward
 
   | Caption of int * string
-  | Interact of Interaction
-  | Refresh
+  | Interact of Interaction * (Reference option -> unit)
+  //| Refresh
 
   | UpdateCompletions of Reference option
 
@@ -362,10 +368,14 @@ type Event =
   | Select of Reference list option
   | Highlight of Reference list option
   | SelectMenu of int option
+ 
+let justInteract i = Interact(i, ignore)
 
-let interact op model = async {
-  let! code = apply model.Code op
-  //printfn "Interacted: %A" op
+let interact trigger op cont model = async {
+  let! ref, code = apply model.Code op
+  match cont with 
+  | Some cont -> cont ref
+  | _ -> ()
   return { model with Program = model.Program @ [op]; Code = code; Forward = []; CurrentFunction = None } }
 
 let parse s =
@@ -373,7 +383,8 @@ let parse s =
   | true, r -> PrimitiveType "number", PrimitiveValue r
   | _ -> PrimitiveType "string", PrimitiveValue s
 
-let update model evt = async {
+let update trigger model evt = async {
+  let interact = interact trigger
   match evt with
   | Caption(n, s) -> 
       return { model with Caption = Some(n, s) }
@@ -385,50 +396,55 @@ let update model evt = async {
   | Forward ->
       let prog = List.head model.Forward :: model.Program
       let fwd = List.tail model.Forward
-      let! code = apply model.Code (List.head model.Forward)
-      return { model with Program = prog; Code = code; Forward = fwd }
+      let! _, code = apply model.Code (List.head model.Forward)
+      return { model with Program = prog; Code = code; Forward = fwd; Modified = true }
   | Backward ->
       let prog, last = match List.rev model.Program with x::xs -> List.rev xs, x | _ -> failwith "Cannot go back"
       let fwd = last :: model.Forward
       let mutable code = model.Initial
       for op in prog do
-        let! c = apply code op
+        let! _, c = apply code op
         code <- c
-      return { model with Program = prog; Forward = fwd; Code = code }
+      return { 
+        Initial = model.Initial; Caption = model.Caption; Modified = true
+        Program = prog; Forward = fwd; Code = code;
+        CurrentCompletions = None; CurrentFunction = None; CurrentReplace = None;
+        CurrentValue = None; CurrentName = None; SelectedPath = None; 
+        HighlightedPath = None; SelectedMenuItem = None }
 
-  | Refresh -> return model
+  //| Refresh -> return model
 
   | UpdateCompletions ref ->
       let completions =
         if ref = Some(Indexed -1) then Some(Indexed -1, [])
         else ref |> Option.map (fun ref -> ref, getCompletions model.Code ref)
-      return { model with CurrentCompletions = completions }
+      return { model with CurrentCompletions = completions; Modified = true }
 
   | UpdateCurrentFunction f ->
-      return { model with CurrentFunction = f }
+      return { model with CurrentFunction = f; Modified = true }
 
   | UpdateReplace r ->
-      return { model with CurrentReplace = r }
+      return { model with CurrentReplace = r; Modified = true }
   | FinishReplace ->
       let ref, s = model.CurrentReplace.Value
       let t, v = parse s
-      return! { model with CurrentReplace = None } |> interact (ReplaceValue(ref, v, t))
+      return! { model with CurrentReplace = None; Modified = true } |> interact (ReplaceValue(ref, v, t)) None
 
   | UpdateAddValue s ->
-      return { model with CurrentValue = s }
+      return { model with CurrentValue = s; Modified = true }
   | FinishAddValue ->
       let t, v = parse (defaultArg model.CurrentValue "")
-      return! { model with CurrentValue = None; CurrentCompletions = None } |> interact (DefineValue(v, t))
+      return! { model with CurrentValue = None; Modified = true; CurrentCompletions = None } |> interact (DefineValue(v, t)) None
 
   | UpdateName(rn) ->
-      return { model with CurrentName = rn }
+      return { model with CurrentName = rn; Modified = true }
   | FinishNaming ->
       match model.CurrentName with
-      | Some(ref, n) -> return! { model with CurrentName = None } |> interact (Name(ref, n))
+      | Some(ref, n) -> return! { model with CurrentName = None; Modified = true } |> interact (Name(ref, n)) None
       | _ -> return failwith "Cannot finish naming when current name is none"
 
-  | Interact i ->
-      return! { model with CurrentCompletions = None } |> interact i }
+  | Interact(i, cont) ->
+      return! { model with CurrentCompletions = None; Modified = true } |> interact i (Some cont) }
 
 let cols cls els =
   h?table ["class"=>cls] [
@@ -439,13 +455,20 @@ let rows cls els =
     for e in els -> h?tr [] [ h?td [ "class" => "cell cell-row" ] [ e ] ]
   ]
 
-let getPreview trigger (v:Value) (typ:Type) =
-    match v, typ with
-    | OperationValue _, _ -> "Block is an operation " + formatType 3 typ, None
-    | PrimitiveValue v, PrimitiveType "string" -> "Block is a text '" + string v + "'", None
-    | PrimitiveValue v, PrimitiveType "number" -> "Block is a number " + string v, None
-    | PrimitiveValue v, _ -> "Block is a primitive value '" + string v + "'", None
-    | ObjectValue v, _ -> v.Preview(fun () -> trigger Refresh)
+let getPreview ref trigger (v:Value) (typ:Type) =
+  match v, typ with
+  | OperationValue _, _ -> "Block is an operation " + formatType 3 typ, None
+  | PrimitiveValue v, PrimitiveType "string" -> "Block is a text '" + string v + "'", None
+  | PrimitiveValue v, PrimitiveType "number" -> "Block is a number " + string v, None
+  | PrimitiveValue v, _ -> "Block is a primitive value '" + string v + "'", None
+  | ObjectValue v, _ -> 
+      let ctx = 
+        { Reference = ref
+          Interact = fun i -> Async.FromContinuations(fun (cont, _, _) -> 
+            trigger (Interact(i, cont)) )
+          Select = fun ref -> trigger (Select (Some [ref]))
+        }
+      v.Preview(ctx)
 
 let groupSource source =
   let refs =
@@ -573,7 +596,7 @@ let renderSelectableBox ctx (path, ref) extras body =
         yield "dblclick" =!> fun _ e ->
           e.cancelBubble <- true
           Browser.window.getSelection().removeAllRanges()
-          ctx.Trigger(Interact(Evaluate ref)) 
+          ctx.Trigger(justInteract(Evaluate ref)) 
         yield "click" =!> fun _ e ->
           e.cancelBubble <- true
           if ctx.State.SelectedPath <> Some path then ctx.Trigger (Select(Some path))
@@ -613,7 +636,7 @@ let renderSelectableBox ctx (path, ref) extras body =
               match ctx.State.CurrentFunction with
               | Some k when ref = k ->
                   for inp in getInputs ctx.State.Code ref ->
-                    h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Abstract([inp], k)))] [ text ("taking " + formatReferencedExpr ctx inp) ]
+                    h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(justInteract(Abstract([inp], k)))] [ text ("taking " + formatReferencedExpr ctx inp) ]
               | _ ->
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(UpdateCurrentFunction(Some(k))) ] [ text "function" ]
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(UpdateName(Some(k, ""))) ] [ text "name" ]
@@ -622,7 +645,7 @@ let renderSelectableBox ctx (path, ref) extras body =
                   let formatCompl = function
                     | NamedCompletion n -> n
                     | ParameterCompletion pars -> [ for n, r in pars -> sprintf "%s = %s" n (formatReferencedExpr ctx r) ] |> String.concat ", "
-                  for n, c in compl -> h?a ["href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Complete c)) ] [ text (formatCompl n) ]
+                  for n, c in compl -> h?a ["href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(justInteract(Complete c)) ] [ text (formatCompl n) ]
             ]
         | _ -> ()
       ]
@@ -747,7 +770,7 @@ let renderHighlightSection trigger state =
       let msg = 
         match state.HighlightedPath with
         | Some (((GetValue state v) as ref)::_) ->
-            fst (getPreview trigger v (typeCheck state.Code ref) )
+            fst (getPreview ref trigger v (typeCheck state.Code ref) )
         | Some _ ->
             "Double click on a block to evaluate it."
         | _ -> 
@@ -767,13 +790,13 @@ let renderSelectedSection label reverse trigger state =
       let msg, body = 
         match state.SelectedPath with
         | Some (((GetValue state v) as ref)::_) ->
-            getPreview trigger v (typeCheck state.Code ref) 
+            getPreview ref trigger v (typeCheck state.Code ref) 
         | Some (ref::_) ->
             "", Some <| h?div [] [ 
               h?span ["class" => "text"] [text "Double click on a block to evaluate it." ]
               h?button [
                 "class" => "evaluate"
-                "click" =!> fun _ e -> e.cancelBubble <- true; trigger(Interact(Evaluate ref)) 
+                "click" =!> fun _ e -> e.cancelBubble <- true; trigger(justInteract(Evaluate ref)) 
               ] [ text "evaluate" ]
             ]
         | _ -> 
@@ -825,7 +848,7 @@ let renderCreateSection (reverse:System.Collections.Generic.IDictionary<_, _>) t
               yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; trigger(UpdateAddValue (Some "")) ] [ text "add value" ]
               yield h?hr [] []
               for (KeyValue(k, _)) in ctx.State.Code.External ->
-                h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(DefineExternal k)) ] [ text k ]
+                h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(justInteract(DefineExternal k)) ] [ text k ]
             ]
 
         | Some(k, compl), _ ->
@@ -847,7 +870,7 @@ let renderCreateSection (reverse:System.Collections.Generic.IDictionary<_, _>) t
               match ctx.State.CurrentFunction with
               | Some ref ->
                   for inp in getInputs ctx.State.Code ref ->
-                    h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Abstract([inp], k)))] [ text ("taking " + formatReferencedExpr ctx inp) ]
+                    h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(justInteract(Abstract([inp], k)))] [ text ("taking " + formatReferencedExpr ctx inp) ]
               | _ ->
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(UpdateCurrentFunction(Some(k))) ] [ text "Create function" ]
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; ctx.Trigger(UpdateName(Some(k, ""))) ] [ text "Name cell" ]
@@ -861,7 +884,7 @@ let renderCreateSection (reverse:System.Collections.Generic.IDictionary<_, _>) t
                             yield h?strong [] [ text n ]
                             yield text " = "
                             yield text (formatReferencedExpr ctx r) ] 
-                  for n, c in compl -> h?a ["href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(Complete c)) ] (formatCompl n)
+                  for n, c in compl -> h?a ["href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(justInteract(Complete c)) ] (formatCompl n)
             ]
         | _ -> 
           yield h?span [ "class" => "item" ] [ text "Click on a code block to see completions." ]        
@@ -921,7 +944,7 @@ let renderCode trigger (state:Model) =
                 yield h?a [ "href"=>"javascript:;"; "click" =!> fun _ e -> e.cancelBubble <- true; trigger(UpdateAddValue (Some "")) ] [ text "add value" ]
                 yield h?hr [] []
                 for (KeyValue(k, _)) in ctx.State.Code.External ->
-                  h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(Interact(DefineExternal k)) ] [ text k ]
+                  h?a [ "href"=>"javascript:;"; "click" =!> fun _ _ -> ctx.Trigger(justInteract(DefineExternal k)) ] [ text k ]
               ]
           | _ -> ()
         ]
@@ -968,7 +991,7 @@ let renderSheet (groups:_[], cols, rows, cells:_[][], reverseLookup) trigger (st
               "dblclick" =!> fun _ e ->
                 e.cancelBubble <- true
                 Browser.window.getSelection().removeAllRanges()
-                trigger(Interact(Evaluate ref)) 
+                trigger(justInteract(Evaluate ref)) 
               "click" =!> fun _ e ->
                 e.cancelBubble <- true
                 if state.SelectedPath <> Some [ref] then 
@@ -1117,7 +1140,7 @@ module Serializer =
 
   let serializeEvent = function
     | Caption(n, s) -> createObj [ "kind" => "caption"; "number" => n; "text" => s ]
-    | Interact i -> createObj [ "kind" => "interact"; "interaction" => serializeInteraction i ]
+    | Interact(i, _) -> createObj [ "kind" => "interact"; "interaction" => serializeInteraction i ]
     | Select(None) -> createObj [ "kind" => "noselect" ]
     | Highlight(None) -> createObj [ "kind" => "nohighlight" ]
     | SelectMenu(None) -> createObj [ "kind" => "nomenu" ]
@@ -1126,7 +1149,7 @@ module Serializer =
     | SelectMenu(Some n) -> createObj [ "kind" => "menu"; "selected" => n ]
     | Backward -> createObj [ "kind" => "backward" ]
     | Forward -> createObj [ "kind" => "forward" ]
-    | Refresh -> createObj [ "kind" => "refresh" ]
+    //| Refresh -> createObj [ "kind" => "refresh" ]
     | UpdateCompletions None -> createObj [ "kind" => "nocompletions" ]
     | UpdateCurrentFunction None -> createObj [ "kind" => "nofunction" ]
     | FinishReplace -> createObj [ "kind" => "finishreplace" ]
@@ -1168,10 +1191,10 @@ module Serializer =
     | "select" -> Select(Some(List.ofArray (Array.map deserializeRef obj?path)))
     | "highlight" -> Highlight(Some(List.ofArray (Array.map deserializeRef obj?path)))
     | "menu" -> SelectMenu(Some obj?selected)
-    | "interact" -> Interact (deserializeInteraction obj?interaction)
+    | "interact" -> Interact (deserializeInteraction obj?interaction, ignore)
     | "backward" -> Backward
     | "forward" -> Forward
-    | "refresh" -> Refresh
+    //| "refresh" -> Refresh
     | "nocompletions" -> UpdateCompletions None
     | "nofunction" -> UpdateCurrentFunction None
     | "finishreplace" -> FinishReplace
@@ -1198,8 +1221,33 @@ let renderSource (events:seq<Event>) (state:Model) =
     yield text "]"
   ]
 
-let viewCode events trigger state = 
+let viewHeader unclip id trigger state title = 
+  let makeIcon fa enabled f = 
+    h?a  
+      [ "href" => "javascript:;" 
+        "click" =!> fun _ _ -> if enabled then f() ] 
+      [ h?i [ "class" => "fa fa-" + fa + (if enabled then "" else " disabled") ] [] ]
+
+  h?div [ "class" => "row" ] [
+    h?div [ "class" => "col-sm-12 demo-top" ] [
+      h?div [ "class" => "tools" ] [
+        makeIcon "angle-double-left" true (fun () ->
+          let s = Browser.document.getElementById(id)
+          Browser.window.scrollTo(0., s.offsetTop) )
+        makeIcon "angle-left" (not (List.isEmpty state.Program)) (fun () -> trigger(Backward))        
+        makeIcon "angle-right" (not (List.isEmpty state.Forward)) (fun () -> trigger(Forward))        
+        makeIcon "angle-double-right" true (fun () ->
+          let s = Browser.document.getElementById(id)
+          Browser.window.scrollTo(0., s.offsetTop + s.offsetHeight - Browser.window.innerHeight) )
+        makeIcon "paperclip" state.Modified unclip
+      ]
+      h?h2 [] [ h?strong [] [ text "Demo: " ]; text title ]
+    ]
+  ]
+
+let viewCode unclip id title events trigger state = 
   h?div [] [
+    viewHeader unclip id trigger state title
     h?div [ "class" => "row" ] [
       h?div [ "class" => "col-sm-12 interactive" ] [
         h?table [
@@ -1227,8 +1275,9 @@ let viewCode events trigger state =
     ]
   ]
 
-let viewSheet events trigger state = 
+let viewSheet unclip id title events trigger state = 
   h?div [] [
+    viewHeader unclip id trigger state title
     h?div [ "class" => "row" ] [
       h?div [ "class" => "col-sm-12 interactive" ] [
         h?table [
@@ -1314,6 +1363,83 @@ let sortByType keys resTyp =
             yield k + " ascending", resTyp
             yield k + " descending", resTyp ] } |> ObjectType
 
+let filterByType headers resTyp =
+  { new ObjectType with
+      member x.Refine _ = x
+      member x.Members =
+        [ for k,t in headers do
+            yield k + " equals", OperationType(["value", t], resTyp)
+            yield k + " not equals", OperationType(["value", t], resTyp) ] } |> ObjectType
+
+let framePreview ctx headers (rows:(string[] * Value)[]) = 
+  let getRef ref = async {
+      let! ref = ref
+      match ref with Some ref -> return ref | _ -> return failwith "framePreview: Expected some reference" }
+
+  let interactSortBy order k = Async.StartImmediate <| async {
+    let! sortRef = ctx.Interact (Complete(Dot(ctx.Reference, "sort by"))) |> getRef
+    let! finalRef = ctx.Interact (Complete(Dot(sortRef, k + " " + order))) |> getRef
+    let! _ = ctx.Interact (Evaluate(finalRef)) 
+    ctx.Select finalRef }
+
+  let interactAt i = Async.StartImmediate <| async {
+    let! atRef = ctx.Interact (Complete(Dot(ctx.Reference, "at"))) |> getRef
+    let! valRef = ctx.Interact(DefineValue(PrimitiveValue(float i), PrimitiveType("number"))) |> getRef
+    let! applyRef = ctx.Interact (Complete(Apply(atRef, "index", valRef))) |> getRef
+    let! _ = ctx.Interact (Evaluate(applyRef)) 
+    ctx.Select applyRef }
+
+  let interactEquals neq isNumeric k v = Async.StartImmediate <| async {
+    let! filterRef = ctx.Interact (Complete(Dot(ctx.Reference, "filter by"))) |> getRef
+    let! opRef = ctx.Interact (Complete(Dot(filterRef, k + (if neq then " not equals" else " equals") ))) |> getRef
+    let! valRef = 
+      ( if isNumeric then ctx.Interact(DefineValue(PrimitiveValue(float v), PrimitiveType("number"))) 
+        else ctx.Interact(DefineValue(PrimitiveValue(string v), PrimitiveType("string"))) ) |> getRef
+    let! finalRef = ctx.Interact (Complete(Apply(opRef, "value", valRef))) |> getRef
+    let! _ = ctx.Interact (Evaluate(finalRef)) 
+    ctx.Select finalRef }
+
+  let makeSortLink k cls order = 
+    h?i [ 
+      "class" => "fa fa-" + cls
+      "click" =!> fun e _ -> interactSortBy order k ] []
+
+  let theaders = 
+    [ yield [ text "#" ]
+      for k, _ in headers -> [
+        text k
+        makeSortLink k "sort-up" "descending"
+        makeSortLink k "sort-down" "ascending" ] ]
+
+  let tbody =          
+    [ yield [ 
+        yield [ h?i ["class" => "fa fa-filter"] [] ]
+        for i, (k, t) in Seq.indexed headers -> [ h?select [
+            "change" =!> fun e _ -> 
+                let v = unbox<Browser.HTMLSelectElement>(e).value
+                interactEquals (v.[0] = '!') (t = PrimitiveType "number") k (v.Substring(1))
+            "mousedown" =!> fun e _ ->
+              if e.children.length = 1. then
+                for v in rows |> Seq.map (fun (r, _) -> r.[i]) |> Seq.distinct do
+                  let o1 = Browser.document.createElement_option()
+                  o1.value <- "=" + v
+                  o1.innerText <- "equals " + v
+                  let o2 = Browser.document.createElement_option()
+                  o2.value <- "!" + v
+                  o2.innerText <- "not equals " + v
+                  e.appendChild(o1) |> ignore
+                  e.appendChild(o2) |> ignore
+          ] [
+            h?option ["value" => ""]  [ text "all" ]
+          ] ] ]
+      for i, (a, _) in Seq.indexed (Seq.truncate 200 rows) -> [
+        yield [ h?span [ "class" => "index"
+                         "click" =!> fun _ _ -> interactAt i ] [ text (string i) ] ]
+        for v in a -> [ text v ] ] ]
+
+  sprintf "Block is a table with %d rows." rows.Length,
+  Some (renderTable theaders tbody)
+
 let frameValue (data:string[][]) =
   let inferType v = match System.Int32.TryParse(v) with true, _ -> PrimitiveType "number" | _ -> PrimitiveType "string"
   let headers = Array.map2 (fun h v -> h, inferType v) data.[0] data.[1]
@@ -1323,45 +1449,7 @@ let frameValue (data:string[][]) =
       { new FrameObjectValue with
         member x.Headers = headers
         member x.Hash = hash [for _, (ObjectValue r) in rows -> r.Hash ]
-        member x.Preview(_) =
-
-          let theaders = 
-            [ yield [ text "#" ]
-              for k, _ in headers -> [
-                text k
-                h?i [ 
-                  "class" => "fa fa-sort-up"
-                  "click" =!> fun e _ -> Browser.window.alert("up " + k) ] []
-                h?i [ 
-                  "class" => "fa fa-sort-down"
-                  "click" =!> fun e _ -> Browser.window.alert("down " + k) ] [] ] ]
-
-          let tbody =          
-            [ yield [ 
-                yield [ h?i ["class" => "fa fa-filter"] [] ]
-                for i, (k, _) in Seq.indexed headers -> [ h?select [
-                    "change" =!> fun e _ -> Browser.window.alert(unbox<Browser.HTMLSelectElement>(e).value)
-                    "mousedown" =!> fun e _ ->
-                      if e.children.length = 1. then
-                        for v in rows |> Seq.map (fun (r, _) -> r.[i]) |> Seq.distinct do
-                          let o1 = Browser.document.createElement_option()
-                          o1.value <- "=" + v
-                          o1.innerText <- "equals " + v
-                          let o2 = Browser.document.createElement_option()
-                          o2.value <- "!" + v
-                          o2.innerText <- "not equals " + v
-                          e.appendChild(o1) |> ignore
-                          e.appendChild(o2) |> ignore
-                  ] [
-                    h?option ["value" => ""]  [ text "all" ]
-                  ] ] ]
-              for i, (a, _) in Seq.indexed (Seq.truncate 200 rows) -> [
-                yield [ text (string i) ]
-                for v in a -> [ text v ] ] ]
-
-          sprintf "Block is a table with %d rows." rows.Length,
-          Some (renderTable theaders tbody)
-
+        member x.Preview(ctx) = framePreview ctx headers rows
         member x.Lookup m =
           if m = "at" then OperationValue(None, function
             | [PrimitiveValue n] -> async.Return(snd rows.[unbox n])
@@ -1391,7 +1479,7 @@ let frameValue (data:string[][]) =
               { new FrameObjectValue with
                 member y.Headers = x.Headers
                 member y.Hash = x.Hash
-                member y.Preview(a) = x.Preview(a)
+                member y.Preview(c) = x.Preview(c)
                 member x.Lookup m =
                   let asc = m.EndsWith(" ascending")
                   let m = m.Replace(" ascending", "").Replace(" descending", "")
@@ -1401,6 +1489,25 @@ let frameValue (data:string[][]) =
                     if isNumeric then (if asc then Array.sortBy (f >> float) else Array.sortByDescending (f >> float))
                     else (if asc then Array.sortBy f else Array.sortByDescending f)
                   rows |> sort (fun (data, _) -> data.[index]) |> v }
+            ObjectValue(fov :> ObjectValue)
+
+          elif m = "filter by" then
+            let fov =
+              { new FrameObjectValue with
+                member y.Headers = x.Headers
+                member y.Hash = x.Hash
+                member y.Preview(c) = x.Preview(c)
+                member x.Lookup m =
+                  let neq = m.EndsWith(" not equals")
+                  let m = m.Replace(" not equals", "").Replace(" equals", "")
+                  let index = headers |> Array.findIndex (fun (h, _) -> h = m)
+                  OperationValue(None, fun [PrimitiveValue v1] -> async {
+                    let isNumeric = snd headers.[index] = PrimitiveType "number"
+                    let check (v2:string) = 
+                      let eq = if isNumeric then unbox<float> v1 = unbox<float> v2 else unbox<string> v1 = unbox<string> v2
+                      if neq then not eq else eq
+                    return rows |> Array.filter (fun (data, _) -> check data.[index]) |> v }
+                  ) }
             ObjectValue(fov :> ObjectValue)
 
           else failwith "frameValue: Member not found" }
@@ -1419,6 +1526,7 @@ let rec frameType columns =
           yield "sort by", sortByType (Array.map fst columns) (ObjectType(frameType columns))
           yield "sum", ObjectType(rowType [||])
           yield "filter", OperationType(["predicate", OperationType(["row", rt], PrimitiveType "bool")], ObjectType(frameType columns))
+          yield "filter by", filterByType columns (ObjectType(frameType columns))
         ] }
 
 let createDataFrame file = async {
@@ -1505,7 +1613,7 @@ let chart =
     member x.Members = ["bar", OperationType(["data", ObjectType(rowType [||])], barChartType) ] } |> ObjectType
 
 
-let createScrolly id stepHeight stepCount trigger =
+let createScrolly (unclip:IEvent<_>) id stepHeight stepCount trigger =
   let stepHeight, stepCount = float stepHeight, float stepCount
   let s = Browser.document.getElementById(id)
   let sb = Browser.document.getElementById(id + "-body")
@@ -1548,6 +1656,8 @@ let createScrolly id stepHeight stepCount trigger =
   update()
   resize() 
   
+  unclip.Add(fun () -> lastStep <- -1; section <- -1; update ())
+
   let oldresize = Browser.window.onresize
   Browser.window.onresize <- fun e ->
     if unbox oldresize <> null then oldresize(e)
@@ -1575,7 +1685,7 @@ let imga = Browser.document.getElementById("screen1-frame-a")
 let imgb = Browser.document.getElementById("screen1-frame-b")
 let mutable imgs = unbox<Browser.HTMLImageElement> imga, unbox<Browser.HTMLImageElement> imgb
 let captions = readCaptions "screen1-captions"
-createScrolly "screen1" 50 24 (fun i ->
+createScrolly (new Event<_>()).Publish "screen1" 50 24 (fun i ->
   let iprev, inext = imgs
   inext.src <- images.[i].src
   iprev.className <- "frame-out"
@@ -1612,7 +1722,7 @@ for i in 0 .. int latexElements.length - 1 do
   let el = latexElements.[i] |> unbox<Browser.HTMLElement>
   el.parentElement.outerHTML <- "<div class='mathjax'>\(" + el.innerText + "\)</div>"
 
-let createEvalAgent initial (events:_[]) = MailboxProcessor<_ * AsyncReplyChannel<_>>.Start(fun inbox -> async {
+let createEvalAgent update initial (events:_[]) = MailboxProcessor<_ * AsyncReplyChannel<_>>.Start(fun inbox -> async {
   let cache = System.Collections.Generic.Dictionary<_, _>()
   cache.[0] <- initial
   try
@@ -1637,24 +1747,34 @@ let initialize () = async {
       Counter = 0; Source = [] } 
   let initial =
     { Initial = initialCode; Code = initialCode; Program = []; CurrentFunction = None; Forward = []; Caption = None
-      CurrentValue = None; CurrentName = None; CurrentReplace = None; CurrentCompletions = None
+      CurrentValue = None; CurrentName = None; CurrentReplace = None; CurrentCompletions = None; Modified = false;
       SelectedPath = None; HighlightedPath = None; SelectedMenuItem = None }
   return initial }
 
 let createInteractive initial sheetMode id = async {
   try
-    let view = if sheetMode then viewSheet else viewCode
-    let setState = createVirtualDomAsyncApp (id + "-out") initial view update
     let codeScript = Browser.document.getElementById(id + "-source")
     let events = codeScript.innerText |> Serializer.deserializeEvents 
     let skipEvents = int (codeScript.dataset.["skipEvents"])
+    let title = codeScript.dataset.["title"]
+    let view = if sheetMode then viewSheet else viewCode
     
-    let agent = createEvalAgent initial events
+    let mutable clipped = false
+    let unclipEvent = new Event<_>()
+    let unclip () = 
+      clipped <- false
+      unclipEvent.Trigger()
+
+    let trigger, setState, stateChanged = createVirtualDomAsyncApp (id + "-out") initial (view unclip id title) update
+    stateChanged.Add(fun state -> clipped <- state.Modified)
+    
+    let agent = createEvalAgent (update trigger) initial events
     //printfn "%s has %d events" id events.Length
-    createScrolly id 50 (events.Length - skipEvents + 1) (fun i -> Async.StartImmediate <| async {
+    createScrolly unclipEvent.Publish id 50 (events.Length - skipEvents + 1) (fun i -> Async.StartImmediate <| async {
       //printfn "scroll %s to %d" id i
-      let! state = agent.PostAndAsyncReply(fun ch -> i + skipEvents, ch)
-      setState state
+      if not clipped then
+        let! state = agent.PostAndAsyncReply(fun ch -> i + skipEvents, ch)
+        setState { state with Modified = false }
     })
   with e ->
     Browser.console.error(e)
