@@ -1222,24 +1222,24 @@ let renderSource (events:seq<Event>) (state:Model) =
   ]
 
 let viewHeader unclip id trigger state title = 
-  let makeIcon fa enabled f = 
+  let makeIcon title fa enabled f = 
     h?a  
-      [ "href" => "javascript:;" 
+      [ "href" => "javascript:;"; "title" => title
         "click" =!> fun _ _ -> if enabled then f() ] 
       [ h?i [ "class" => "fa fa-" + fa + (if enabled then "" else " disabled") ] [] ]
 
   h?div [ "class" => "row" ] [
     h?div [ "class" => "col-sm-12 demo-top" ] [
       h?div [ "class" => "tools" ] [
-        makeIcon "angle-double-left" true (fun () ->
+        makeIcon "Jump to the start of the interactive demo." "angle-double-left" true (fun () ->
           let s = Browser.document.getElementById(id)
           Browser.window.scrollTo(0., s.offsetTop) )
-        makeIcon "angle-left" (not (List.isEmpty state.Program)) (fun () -> trigger(Backward))        
-        makeIcon "angle-right" (not (List.isEmpty state.Forward)) (fun () -> trigger(Forward))        
-        makeIcon "angle-double-right" true (fun () ->
+        makeIcon "Undo the last interaction with the system." "angle-left" (not (List.isEmpty state.Program)) (fun () -> trigger(Backward))        
+        makeIcon "Redo a previously undone interaction." "angle-right" (not (List.isEmpty state.Forward)) (fun () -> trigger(Forward))        
+        makeIcon "Jump to the end of the interactive demo." "angle-double-right" true (fun () ->
           let s = Browser.document.getElementById(id)
           Browser.window.scrollTo(0., s.offsetTop + s.offsetHeight - Browser.window.innerHeight) )
-        makeIcon "paperclip" state.Modified unclip
+        makeIcon "Turn auto-play on again and lose all edits." "paperclip" state.Modified unclip
       ]
       h?h2 [] [ h?strong [] [ text "Demo: " ]; text title ]
     ]
@@ -1668,11 +1668,6 @@ let createScrolly (unclip:IEvent<_>) id stepHeight stepCount trigger =
     if unbox oldscroll <> null then oldscroll(e)
     update ()
     
-let images = Array.init 24 (fun i -> 
-  let img = Browser.Image.Create()
-  img.src <- "screens/jupyter/frame" + (i+1).ToString().PadLeft(3,'0') + ".png"
-  img )
-
 let readCaptions id = 
   let caps = Browser.document.getElementById(id).innerText.Trim(' ', '*', '/')
   let caps = caps.Split([|'\r';'\n'|], System.StringSplitOptions.RemoveEmptyEntries)
@@ -1680,20 +1675,21 @@ let readCaptions id =
        let r = cap.Split(':')
        int r.[0], sprintf "<span class='num'><span>%d</span></span><p>%s</p>" (i+1) (r.[1].Trim()) |]
 
-
-let imga = Browser.document.getElementById("screen1-frame-a")
-let imgb = Browser.document.getElementById("screen1-frame-b")
-let mutable imgs = unbox<Browser.HTMLImageElement> imga, unbox<Browser.HTMLImageElement> imgb
-let captions = readCaptions "screen1-captions"
-createScrolly (new Event<_>()).Publish "screen1" 50 24 (fun i ->
-  let iprev, inext = imgs
-  inext.src <- images.[i].src
-  iprev.className <- "frame-out"
-  inext.className <- "frame-in"
-  imgs <- inext, iprev
-  let cap = Browser.document.getElementById("screen1-caption")
-  cap.innerHTML <- captions |> Seq.takeWhile (fun (ci, _) -> ci <= i) |> Seq.last |> snd  
-)
+let createSlideshow ppf prefix images =
+  let images = images |> Array.map (fun f -> Browser.Image.Create(src = f))
+  let imga = Browser.document.getElementById(prefix + "-frame-a")
+  let imgb = Browser.document.getElementById(prefix + "-frame-b")
+  let mutable imgs = unbox<Browser.HTMLImageElement> imga, unbox<Browser.HTMLImageElement> imgb
+  let captions = readCaptions (prefix + "-captions")
+  createScrolly (new Event<_>()).Publish prefix ppf images.Length (fun i ->
+    let iprev, inext = imgs
+    inext.src <- images.[i].src
+    iprev.className <- "frame-out"
+    inext.className <- "frame-in"
+    imgs <- inext, iprev
+    let cap = Browser.document.getElementById(prefix + "-caption")
+    cap.innerHTML <- captions |> Seq.takeWhile (fun (ci, _) -> ci <= i) |> Seq.last |> snd  
+  )
 
 module Showdown = 
   let (?) = JsInterop.(?)
@@ -1780,6 +1776,12 @@ let createInteractive initial sheetMode id = async {
     Browser.console.error(e)
 }
 
+
+let jupyter = Array.init 24 (fun i -> "screens/jupyter/frame" + (i+1).ToString().PadLeft(3,'0') + ".png")
+let gui = Array.init 474 (fun i -> "screens/gui/frame" + i.ToString().PadLeft(3,'0') + ".png")
+createSlideshow 50 "screen1" jupyter
+createSlideshow 10 "screen2" gui
+()
 Async.StartImmediate <| async {
   let! initial = initialize ()
   do! createInteractive initial false "scrolly1"

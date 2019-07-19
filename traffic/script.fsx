@@ -91,6 +91,7 @@ let avia =
   |> Frame.mapValues (fun (s:string) -> if s.EndsWith(" p") then box(float(s.Replace(" p", ""))) else box s)
 let rail = 
   readEurostatFile "raw/tran_sf_railvi.tsv"
+  |> Frame.fillMissingWith 0.0
 
 avia.SaveCsv("clean/avia.csv")
 rail.SaveCsv("clean/rail.csv")

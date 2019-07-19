@@ -817,10 +817,10 @@ In the following demo, we construct the same program as above -- a visualization
 number of deaths in air traffic accidents per year. This time, the analysis is done in a
 programming environment that looks more like a spreadsheet. To do this, we do not need to
 change the representation of Histogram programs. A program is still a list of interactions and
-a state is still mapping from references to formulas or values. We only change the way we
+a state is still a mapping from references to formulas or values. We only change the way we
 display the state and the user interface through which interactions are triggered.
 
-Note that the following is still quite far from a traditional spreadsheet in two ways. First, cells
+Note that the following is quite far from a traditional spreadsheet in two ways. First, cells
 in the table display formulas rather than values as a typical spreadsheet does. To see a value,
 you have to click on a cell and look at the preview panel. Second, the locations of formulas
 in the spreadsheet is determined automatically and a user cannot move them. We discuss ways of
@@ -1051,13 +1051,115 @@ the right display values and let you interact with the system.
 </script>
 
 <div class="container"><div class="row">
+<div class="col-sm-12 col-lg-4 col-xl-3 offset-xl-1 order-lg-last markdown">
+
+> **Try it yourself.**
+You can experiment with the spreadsheet view in the same way as with the code view.
+For example, load the `data/rail.csv` file with information on rail accidents and
+compare rows at indices 3025 and 3018 showing the number of rail passengers killed
+in France and Germany.
+
+</div>
 <div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
-note on function values - appy cell is displayed differently...
+The spreadsheet view of a Histogram program is constructed from the same state, but in a
+different way. Rather than constructing recursive expressions, we keep the flat structure of
+formulas. We replace both indexed and named references with a location in the spreadsheet.
+The view is constructed as follows:
 
+ - Formulas that represent a member access or an application are placed below a cell that
+   contains the object or operation, but only when there are no other formulas using the same
+   object or operation.
 
+ - If a formula is referenced from multiple other formulas, then the formulas are placed at
+   the top of a new column. Note that when we add new formula, a single column may be split
+   into multiple new columns, because a formula that has been previously referenced just once
+   may now be referenced multiple times.
 
-<h3>Binding actions to UI elements</h3>
+ - All primitive values, including numbers, strings and also functions, that are used as
+   arguments of other operations, are placed in the first column. When we access a member on
+   such primitive or invoke such operation directly, it will be moved to a new column.
+
+When displaying a formula in a cell, we display the value of primitive values and operations.
+For other types of formulas, we display the code that they represent. Generally, we do not
+build recursive expressions with one exception. In the above demo, we have `data` in B1,
+`B1.load` in B2 and `B1.load(A1)` in B3. The cell B2 accesses member on an object in B1 and
+the cell in B3 invokes the member with an argument. We could display this as `B2(A1)`, which
+is more correct as B2 represents an operation that we are invoking. We expect that treating of
+operations as first-class values might not be obvious and so our view hides this fact.
+
+</div></div>
+<div class="row align-items-end"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
+
+### Creating programs through direct manipulation
+
+When using a spreadsheet system such as Excel, you do not need to write code. Instead, many
+tools for manipulating data in the spreadsheet are exposed through user interface. These
+are easy to use, but they are not always transparent. Many operations will modify the data
+in the spreadsheet, without leaving a trace of how this has been done.
+
+In Histogram, we can support similarly easy ways of manipulating data for kinds of data that
+have a preview like data tables. However, we can keep the accountability and transparency that
+we get by representing those as program. The key idea is that a preview can be interactive and
+using the user interface can trigger interactions that will then be added to the program.
+
+In our prototype, we implement this functionality for data tables. When a Histogram formula
+evaluates to a data table, you can not only see the data, but also filter it, sort it and
+index into it directly through the user interface. The following demo illustrates how this
+is done.
+
+</div><div class="col-sm-12 col-md-11 col-lg-4 col-xl-3 offset-xl-1 markdown">
+
+> **How does it work?** The next demo is non-interactive, because this
+allows us to show mouse cursor location and interactions with standard operating
+system controls. The image data for this demo are quite large (60MB) and so it might take
+some time to load.
+
+</div></div></div>
+
+<div class="demo" id="screen2" style="height:2400px"><div id="screen2-body" class="demo-body">
+<div class="container">
+  <div class="row">
+    <div class="col-sm-10 demo-top">
+      <h2><strong>Demo:</strong> Creating programs through direct manipulation</h2>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-12 col-md-10" style="text-align:center;">
+      <div class="frame">
+        <img src="screens/gui/frame001.png" id="screen2-frame-a" style="position:absolute;max-width:100%;max-height:60vh"/>
+        <img src="screens/gui/frame001.png" id="screen2-frame-b" style="max-width:100%;max-height:60vh"/>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-10 large-caption" id="screen2-caption" class="caption">
+    </div>
+  </div>
+</div>
+</div></div>
+<script type="text/captions" id="screen2-captions">/*
+0: We load data and evaluate the operation to obtain preview. Now we can click on arrows in the preview to sort data by a column.
+90: Clicking on an arrow adds new member accesses to our code. Accessing 'sort by' and '2015 descending' sorts the data by a given column.
+125: We can also access individual rows by clicking on the index of the row in the first column. This adds the 'at' operation to the code.
+170: The source code represents a full trace of the transformations we applied. We can retrace our steps by navigating through the code.
+250: The user interface also supports filtering. Here, we get data on accidents involving deaths ('KIL') and remove EU28 aggregates.
+410: All interactions with the preview result in new code. Finally, we sort the table by people killed in 2017 accidents.
+*/</script>
+
+<div class="container"><div class="row">
+<div class="col-sm-12 col-lg-4 col-xl-3 offset-xl-1 order-lg-last markdown">
+
+> **Try it yourself.**
+The above demo is not interactive, but you can fully replicate it in one of the earlier playgrounds.
+Just scroll up and try exploring data on your own. Note that you can use both the code view and the
+spreadsheet view, so you can use either of the two!
+
+</div>
+<div class="col-sm-12 col-md-9 col-lg-8 markdown">
+
+Why this is nice...
+
 <h2>Type system</h2>
 <h3>Well constructed programs</h3>
 <h3>Dependent types</h3>

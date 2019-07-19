@@ -33,8 +33,9 @@ blockquote p { font-size:12pt; }
 .demo .large-caption p { font-size:14pt; line-height:1.3em; margin-bottom:10px; max-width:580px; }
 
 .demo .frame { max-height:60vh;max-width:100%;margin:40px auto 40px auto;position:relative; }
-.demo .frame-out { transition:opacity 0.25s linear; opacity:0; }
+.demo .frame-out { opacity:0; }
 .demo .frame-in { opacity:1; }
+#screen1 .frame-out { transition:opacity 0.25s linear; }
 
 @media (min-width: 576px) { .bigger-container { max-width:540px; }  }
 @media (min-width: 768px) { .bigger-container { max-width:720px; }  }
