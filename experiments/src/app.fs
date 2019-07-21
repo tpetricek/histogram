@@ -381,6 +381,7 @@ let interact trigger op cont model = async {
 let parse s =
   match System.Int32.TryParse(s) with
   | true, r -> PrimitiveType "number", PrimitiveValue r
+  | _ when s.[0] = '\"' && s.[s.Length-1] = '\"' -> PrimitiveType "string", PrimitiveValue (s.[1 .. s.Length-2]) 
   | _ -> PrimitiveType "string", PrimitiveValue s
 
 let update trigger model evt = async {
@@ -1351,7 +1352,7 @@ let rowValue headers values =
 
       member x.Lookup m =
         if m = "lookup" then OperationValue(None, fun [PrimitiveValue m] -> async {
-          return data |> Seq.pick (fun (k, v) -> if k = unbox m then Some(PrimitiveValue v) else None) })
+          return data |> Seq.pick (fun ((k, _), v) -> if k = unbox m then Some(PrimitiveValue v) else None) })
         else data |> Seq.pick (fun ((k, _), v) -> if k = m then Some(parse v) else None) }
   ObjectValue(row :> ObjectValue)
 
@@ -1787,4 +1788,5 @@ Async.StartImmediate <| async {
   do! createInteractive initial false "scrolly1"
   do! createInteractive initial false "scrolly2"
   do! createInteractive initial true "scrolly3"
+  do! createInteractive initial false "scrolly4"
 }

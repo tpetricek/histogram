@@ -1094,19 +1094,22 @@ operations as first-class values might not be obvious and so our view hides this
 ### Creating programs through direct manipulation
 
 When using a spreadsheet system such as Excel, you do not need to write code. Instead, many
-tools for manipulating data in the spreadsheet are exposed through user interface. These
-are easy to use, but they are not always transparent. Many operations will modify the data
-in the spreadsheet, without leaving a trace of how this has been done.
+tools for manipulating data in the spreadsheet are exposed through user interface. This way
+of interacting with systems is known as direct manipulation user interfaces and has been
+recognised and developed by ([Shneiderman, 1981](#refs)). Such interfaces are easy to use,
+but they are not always transparent. Many operations in a spreadsheet system like Excel will
+modify the data in the spreadsheet, without leaving a trace of how this has been done.
 
 In Histogram, we can support similarly easy ways of manipulating data for kinds of data that
 have a preview like data tables. However, we can keep the accountability and transparency that
 we get by representing those as program. The key idea is that a preview can be interactive and
 using the user interface can trigger interactions that will then be added to the program.
+This is similar to the idea of the Sketch-n-sketch system ([Chugh et al., 2016](#refs)), which
+uses different program representation to achieve similar effect.
 
-In our prototype, we implement this functionality for data tables. When a Histogram formula
-evaluates to a data table, you can not only see the data, but also filter it, sort it and
-index into it directly through the user interface. The following demo illustrates how this
-is done.
+In our prototype, we implement a direct manipulation user interface for data tables. When a
+Histogram formula evaluates to a data table, you can not only see the data, but also filter
+it, sort it and index into it directly through the user interface.
 
 </div><div class="col-sm-12 col-md-11 col-lg-4 col-xl-3 offset-xl-1 markdown">
 
@@ -1158,11 +1161,220 @@ spreadsheet view, so you can use either of the two!
 </div>
 <div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
-Why this is nice...
+The fact that Histogram represents programs as lists of interactions makes implementing the above
+interface easy. The code in the preview does not have to laboriously transform the source code of
+the program and insert code corresponding to the actions made by the user. Instead, it is provided
+with a reference representing the data table and it triggers a number of interactions.
 
-<h2>Type system</h2>
-<h3>Well constructed programs</h3>
-<h3>Dependent types</h3>
+Consider the case when we click on a row index $4$ in a data table and the preview triggers
+interactions that add a call to `at(4)` and evaluate it. The preview code is provided with a
+reference $r$ that represents the data table and an object $e$, which represents the editor
+environment. We can add interactions by calling the $\textit{interact}$ operation on $e$. This
+mutates the current list of interactions. When the operation defines a new formula, the operation
+also returns a reference to this new formula. Adding `at(4)` is expressed as follows:
+
+```mathjax
+\begin{array}{l}
+r_1 = e.\hspace{-0.1em}\textit{interact}\,(\textbf{def}~4)\\
+r_2 = e.\hspace{-0.1em}\textit{interact}\,(\textbf{dot}~\text{＂}\hspace{-0.23em}\text{at}\hspace{-0.25em}\text{＂}~\textbf{on}~r)\\
+r_3 = e.\hspace{-0.1em}\textit{interact}\,(\textbf{apply}~\textbf{args}~r_1~\textbf{to}~r_2)\\
+      e.\hspace{-0.1em}\textit{interact}\,(\mathbf{evaluate}~r_3)
+\end{array}
+```
+
+Our prototype lets users undo and redo interactions by using the back and forward buttons in the
+upper right corner of the interactive components. This makes it possible to see the individual
+interactions that an action in a user interface triggers. This can help users who are not
+programmers learn how to use the system:
+
+ - One of the ways in which spreadsheet users learn to use advanced features is by examining
+   existing spreadsheets that use them ([Sarkar and Gordon, 2018](#refs)). Our system supports
+   this scenario, because the code shows a full trace of what has happened.
+
+ - More directly, there is also empirical evidence that direct manipulation, like that implemented
+   for our data table previews, lowers the barriers to computer programming and supports transfer
+   learning ([Hundhausen et al., 2009](#refs)).
+
+**Type system:** Checking based on history
+------------------------------------------
+
+Treating programs as lists of interactions has a number of interesting consequences. So far,
+we looked at how this changes the way we refactor code into functions and how this enables
+interesting user interface capabilities. In this section, we focus on more technical aspect and
+discuss the way Histogram checks types.
+
+As discussed earlier, the state that is obtained by applying interactions maps each reference
+to a formula and optionally a value. Histogram programs are not evaluated automatically in the
+background, so we do not have a value for each reference. We make evaluation explicit to follow
+the model used by notebook systems.
+
+In many live programming systems, type system may not provide much additional value, but there
+are two reasons for having a type system in Histogram. First, code is not executed automatically
+and so we can use types to check code when it is being constructed and prevent users from
+creating programs that would fail later. Second, we use type information for computing suggestions
+in the auto-complete lists, both when offering members and when offering possible arguments of
+an operation. We first discuss how Histogram types guarantee correctness and then look at an
+interesting interaction between types and the evaluation interaction.
+
+### Well constructed programs
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+### Dependent types
+
+Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+
+
+</div></div></div>
+
+<div class="demo" id="scrolly4" style="height:1500px"><div id="scrolly4-body" class="demo-body">
+<div class="container-fluid bigger-container">
+  <div id="scrolly4-out">
+  </div>
+</div>
+</div></div>
+
+<script type="text/histgram" id="scrolly4-source" data-skip-events="1" data-title="Interacting with the Histogram environment">[
+  {"kind":"caption","number":1, "text":"Create 'avia'"},
+  {"kind":"completions","reference":-1},
+  {"kind":"menu","selected":0},
+  {"kind":"value","value":"data"},
+  {"kind":"value","value":"data/avia"},
+  {"kind":"value","value":"data/avia.csv"},
+  {"kind":"finishvalue"},
+  {"kind":"completions","reference":-1},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":2},
+  {"kind":"menu","selected":3},
+  {"kind":"interact","interaction":{"kind":"extern","name":"data"}},
+  {"kind":"highlight","path":[1]},
+  {"kind":"select","path":[1]},
+  {"kind":"completions","reference":1},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"interact","interaction":{"kind":"dot","reference":1,"member":"load"}},
+  {"kind":"highlight","path":[2]},
+  {"kind":"select","path":[2]},
+  {"kind":"completions","reference":2},
+  {"kind":"nohighlight"},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"interact","interaction":{"kind":"apply","operation":2,"arguments":[["url",0]]}},
+  {"kind":"highlight","path":[3]},
+  {"kind":"select","path":[3]},
+  {"kind":"nohighlight"},
+  {"kind":"completions","reference":3},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"name","reference":3,"name":""},
+  {"kind":"name","reference":3,"name":"avia"},
+  {"kind":"finishnaming"},
+
+  {"kind":"caption","number":2, "text":"Access two sample rows but don't evaluate them"},
+  {"kind":"completions","reference":-1},
+  {"kind":"menu","selected":0},
+  {"kind":"value","value":""},
+  {"kind":"value","value":"2529"},
+  {"kind":"finishvalue"},
+  {"kind":"highlight","path":["avia"]},
+  {"kind":"select","path":["avia"]},
+  {"kind":"completions","reference":"avia"},
+  {"kind":"nohighlight"},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"interact","interaction":{"kind":"dot","reference":"avia","member":"at"}},
+  {"kind":"highlight","path":[5]},
+  {"kind":"select","path":[5]},
+  {"kind":"completions","reference":5},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"interact","interaction":{"kind":"apply","operation":5,"arguments":[["index",4]]}},
+  {"kind":"noselect"},
+  {"kind":"nohighlight"},
+  {"kind":"completions","reference":-1},
+  {"kind":"menu","selected":0},
+  {"kind":"value","value":""},
+  {"kind":"value","value":"3350"},
+  {"kind":"finishvalue"},
+  {"kind":"highlight","path":[5,6]},
+  {"kind":"select","path":[5,6]},
+  {"kind":"completions","reference":5},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"menu","selected":4},
+  {"kind":"interact","interaction":{"kind":"apply","operation":5,"arguments":[["index",7]]}},
+  {"kind":"select","path":[6]},
+  {"kind":"nohighlight"},
+
+  {"kind":"caption","number":3, "text":"We have not evaluated, so all we get is lookup"},
+  {"kind":"completions","reference":6},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"interact","interaction":{"kind":"dot","reference":6,"member":"lookup"}},
+  {"kind":"noselect"},
+  {"kind":"completions","reference":-1},
+  {"kind":"menu","selected":0},
+  {"kind":"value","value":""},
+  {"kind":"value","value":"\"2015\""},
+  {"kind":"finishvalue"},
+  {"kind":"highlight","path":[9]},
+  {"kind":"select","path":[9]},
+  {"kind":"completions","reference":9},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"menu","selected":4},
+  {"kind":"interact","interaction":{"kind":"apply","operation":9,"arguments":[["name",10]]}},
+  {"kind":"highlight","path":[11]},
+  {"kind":"select","path":[11]},
+
+  {"kind":"caption","number":4, "text":"Evaluation evaluates all the dependencies, but not the other row"},
+  {"kind":"interact","interaction":{"kind":"evaluate","reference":11}},
+  {"kind":"nohighlight"},
+  {"kind":"highlight","path":["avia"]},
+  {"kind":"select","path":["avia"]},
+  {"kind":"nohighlight"},
+  {"kind":"highlight","path":[8]},
+  {"kind":"select","path":[8]},
+  {"kind":"nohighlight"},
+  {"kind":"highlight","path":[6,9,11]},
+  {"kind":"select","path":[6,9,11]},
+  {"kind":"nohighlight"},
+  {"kind":"highlight","path":[8]},
+  {"kind":"select","path":[8]},
+
+  {"kind":"caption","number":5, "text":"Histogram refines type of 'avia' and propagates info via type system so we can access 2001 via member"},
+  {"kind":"completions","reference":8},
+  {"kind":"nohighlight"},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":4},
+  {"kind":"menu","selected":7},
+  {"kind":"menu","selected":10},
+  {"kind":"menu","selected":13},
+  {"kind":"menu","selected":16},
+  {"kind":"menu","selected":19},
+  {"kind":"menu","selected":24},
+  {"kind":"interact","interaction":{"kind":"dot","reference":8,"member":"2001"}},
+  {"kind":"noselect"},
+  {"kind":"highlight","path":[6,9,11]},
+  {"kind":"select","path":[6,9,11]},
+  {"kind":"highlight","path":[12]},
+  {"kind":"select","path":[12]},
+  {"kind":"nohighlight"},
+  {"kind":"interact","interaction":{"kind":"evaluate","reference":12}},
+  {"kind":"highlight","path":[8,12]},
+  {"kind":"select","path":[8,12]},
+  {"kind":"nohighlight"}
+]
+</script>
+
+<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
 Random thoughts
 -----------
@@ -1222,6 +1434,13 @@ Aaron, S., & Blackwell, A. F. (2013, September). From sonic Pi to overtone: crea
 
 Schiller, J., Turbak, F., Abelson, H., Dominguez, J., McKinney, A., Okerlund, J., & Friedman, M. (2014, October). Live programming of mobile apps in App Inventor. In Proceedings of the 2nd Workshop on Programming for Mobile & Touch (pp. 1-8). ACM.
 
+Sarkar, A., Gordon, A. (2018). How do people learn to use spreadsheets? (Work in progress). In Proceedings of the 29th Annual Conference of the Psychology of Programming Interest Group (PPIG 2018), pp28-35.
+
+Chugh, R., Hempel, B., Spradlin, M., & Albers, J. (2016, June). Programmatic and direct manipulation, together at last. In ACM SIGPLAN Notices (Vol. 51, No. 6, pp. 341-354). ACM.
+
+Shneiderman, B. (1981, May). Direct manipulation: A step beyond programming languages. In ACM SIGSOC Bulletin (Vol. 13, No. 2-3, p. 143). ACM.
+
+Hundhausen, C. D., Farley, S. F., & Brown, J. L. (2009). Can direct manipulation lower the barriers to computer programming and promote transfer of training?: An experimental study. ACM Transactions on Computer-Human Interaction (TOCHI), 16(3), 13.
 </div>
 </div>
 </div>
