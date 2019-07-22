@@ -1216,14 +1216,84 @@ in the auto-complete lists, both when offering members and when offering possibl
 an operation. We first discuss how Histogram types guarantee correctness and then look at an
 interesting interaction between types and the evaluation interaction.
 
-### Well constructed programs
+### Well-typed interactions construct correct programs
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+There are a number of ways in which Histogram programs can be incorrect. For example, we a program
+could try to access a non-existent member of an object or attempts to apply arguments to a value
+that is not a function. Histogram uses types to prevent those, but our way of using types is a
+bit different than in traditional languages.
 
-### Dependent types
+Most languages (recursively) type check the abstract syntax tree of a program. In Histogram, we
+could analogously (recursively) type check formulas that are produced by applying individual
+interactions to a state. However, we do not need to do this and we instead just type check the
+interactions themselves. If we apply only well-typed interactions to an initial empty state, the
+program will always be correct. Interestingly, this way of program construction was termed
+_inferential programming_ by [Scherlis and Scott (1983)](#refs), but never further developed.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+We do not formally describe the type system in this essay, but we sketch the important details.
+Histogram supports fairly standard set of types. There are three primitive types, a type for
+operations and a type for objects with members. It is worth noting that our handling of objects is
+structural rather than nominal and we do not support union types:
 
+```mathjax
+\begin{array}{rcl}
+\textit{type}
+  &=& \textit{number} ~~|~~ \textit{string} ~~|~~ \textit{boolean} \\
+  &|& \{ \textit{name}_1\!:\!\textit{type}_1, \ldots, \textit{name}_n\!:\!\textit{type}_n \}\\
+  &|& (\textit{name}_1\!:\!\textit{type}_1, \ldots, \textit{name}_n\!:\!\textit{type}_n) \rightarrow \textit{type}
+\end{array}
+```
+
+When checking a program, we track the types of references that were defined by earlier interactions,
+which then form the assumptions of our typing judgements. There are two kinds of judgements -- one
+for interactions that do not create a new formula (1), such as $\text{evaluate}$, and one for
+interactions that do (2), such as $\text{dot}$. The former ones just check that an interaction is
+well-typed, while the latter ones also synthesize a type for the new reference:
+
+```mathjax
+\begin{array}{lcl}
+\textit{ref}_1\!:\!\textit{type}_1, \ldots, \textit{ref}_n\!:\!\textit{type}_n \vdash \textit{interaction}&\qquad&(1)\\
+\textit{ref}_1\!:\!\textit{type}_1, \ldots, \textit{ref}_n\!:\!\textit{type}_n \vdash \textit{interaction}\Rightarrow\textit{type}&\qquad&(2)
+\end{array}
+```
+
+This way of designing the type system has two interesting consequences. First, when the user is
+creating a program, we can check it efficiently on the fly. All interactions operate on references
+for which we already have types, so it is also easy to infer types for new references. This is
+also the case for operations -- the $\text{abstract}$ interaction creates an operation from an
+existing computation and so Histogram knows the types of the inputs. Second, the fact that we only
+need to type check interactions means that the user interface through which interactions are
+invoked can only offer well-typed ones ones.
+
+Our prototype, indeed, only exposes valid interactions in the auto-complete. There are three kinds
+of interactions where checking needs to be done. Our system lets the user (i) trigger $\text{dot}$
+interactions with the names of all possible members for each reference that is of a record type;
+(2) trigger $\text{apply}$ interactions with all possible matching references as arguments for each
+reference that is of an operation type; and (3) trigger $\text{abstract}$ interactions with all
+possible input references for any selected output reference.
+
+The way in which interactions are offered in the user interface could be formally specified as an
+interaction synthesis relation. Aside from proving that it only offers valid interactions, we
+could also prove that it offers all possible interactions. We leave this as future work and
+instead focus on one interesting aspect of how the $\text{evaluate}$ interaction interacts with
+the type system.
+
+### Refining types based on values
+
+In all the earlier interactive demos, we used the `data.load` operation to load a CSV file from
+a given (relative) URL. The `load` operation can load any CSV file and it does not know anything
+about the two specific CSV files used in the demos. When we later accessed columns in the data
+table, we did so by ordinary member access. For example, in the first demo, we loaded the `data/avia.csv`
+file, accessed the row at index 2529 and then obtained the value in the `2015` column just by
+choosing `2015` from the auto-complete list, which contained all columns available in the file.
+How does Histogram achieve this?
+
+The trick is that the $\text{evaluate}$ interaction can change the type of a reference. When a
+program just constructs code that calls `data.load("data/avia.csv")`, the type of the result will
+be an untyped data table where you can only access columns dynamically based on a name stored as
+a string. However, if a program also includes an interaction that evaluates the call to `load`,
+the type changes to a typed data table where columns are exposed as members. The following demo
+illustrates this behaviour.
 
 </div></div></div>
 
@@ -1235,7 +1305,7 @@ Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
 </div></div>
 
 <script type="text/histgram" id="scrolly4-source" data-skip-events="1" data-title="Interacting with the Histogram environment">[
-  {"kind":"caption","number":1, "text":"Create 'avia'"},
+  {"kind":"caption","number":1, "text":"First, we construct code to load the 'data/avia.csv' file and assign the result to a variable 'avia', but do not evaluate its value."},
   {"kind":"completions","reference":-1},
   {"kind":"menu","selected":0},
   {"kind":"value","value":"data"},
@@ -1272,7 +1342,7 @@ Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
   {"kind":"name","reference":3,"name":"avia"},
   {"kind":"finishnaming"},
 
-  {"kind":"caption","number":2, "text":"Access two sample rows but don't evaluate them"},
+  {"kind":"caption","number":2, "text":"Next, we add code that accesses two sample rows from the data table, but we still do not evaluate either of the two formulas."},
   {"kind":"completions","reference":-1},
   {"kind":"menu","selected":0},
   {"kind":"value","value":""},
@@ -1311,7 +1381,7 @@ Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
   {"kind":"select","path":[6]},
   {"kind":"nohighlight"},
 
-  {"kind":"caption","number":3, "text":"We have not evaluated, so all we get is lookup"},
+  {"kind":"caption","number":3, "text":"The data table has not been evaluated, and so the auto-complete for both of the sample rows only offers 'lookup' operation that finds a column dynamically based on a string value. We can use this, but it is an error-prone way of accessing data!"},
   {"kind":"completions","reference":6},
   {"kind":"menu","selected":0},
   {"kind":"menu","selected":1},
@@ -1334,7 +1404,7 @@ Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
   {"kind":"highlight","path":[11]},
   {"kind":"select","path":[11]},
 
-  {"kind":"caption","number":4, "text":"Evaluation evaluates all the dependencies, but not the other row"},
+  {"kind":"caption","number":4, "text":"Evaluating the lookup gives us the desired value as a string. This interaction also evaluates code to load the data table and the row at index 2529, but the row at index 3350 remains unevaluated."},
   {"kind":"interact","interaction":{"kind":"evaluate","reference":11}},
   {"kind":"nohighlight"},
   {"kind":"highlight","path":["avia"]},
@@ -1345,11 +1415,22 @@ Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
   {"kind":"nohighlight"},
   {"kind":"highlight","path":[6,9,11]},
   {"kind":"select","path":[6,9,11]},
+
+  {"kind":"caption","number":5, "text":"The evaluation refines the type of the 'avia' variable and propagates this information in the type system, so auto-complete for both of the rows now shows all column names. However, the row at index 3350 has still not been evaluated."},
+  {"kind":"completions","reference":6},
   {"kind":"nohighlight"},
+  {"kind":"menu","selected":0},
+  {"kind":"menu","selected":1},
+  {"kind":"menu","selected":3},
+  {"kind":"menu","selected":4},
+  {"kind":"menu","selected":5},
+  {"kind":"menu","selected":6},
+  {"kind":"menu","selected":7},
+  {"kind":"nomenu"},
   {"kind":"highlight","path":[8]},
   {"kind":"select","path":[8]},
 
-  {"kind":"caption","number":5, "text":"Histogram refines type of 'avia' and propagates info via type system so we can access 2001 via member"},
+  {"kind":"caption","number":6, "text":"We can now access the value from the column '2001' in a safer way by choosing it from the auto-complete list. After we construct code to get the value of the column, we evaluate its value, which also evaluates the code to access row at index 3350."},
   {"kind":"completions","reference":8},
   {"kind":"nohighlight"},
   {"kind":"menu","selected":0},
@@ -1441,6 +1522,8 @@ Chugh, R., Hempel, B., Spradlin, M., & Albers, J. (2016, June). Programmatic and
 Shneiderman, B. (1981, May). Direct manipulation: A step beyond programming languages. In ACM SIGSOC Bulletin (Vol. 13, No. 2-3, p. 143). ACM.
 
 Hundhausen, C. D., Farley, S. F., & Brown, J. L. (2009). Can direct manipulation lower the barriers to computer programming and promote transfer of training?: An experimental study. ACM Transactions on Computer-Human Interaction (TOCHI), 16(3), 13.
+
+Scherlis, W. L., & Scott, D. S. (1983). First steps towards inferential programming. In Program Verification (pp. 99-133). Springer, Dordrecht, 1993.
 </div>
 </div>
 </div>
