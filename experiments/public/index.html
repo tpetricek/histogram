@@ -10,17 +10,37 @@
     integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
   <link href="style.css" rel="stylesheet">
   <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+  <title>Histogram: You have to know the past to understand the present</title>
+
+  <meta name="description" content="To invent new programming tools, we need to shift our focus from programs to programming. Programs are created through a variety of interactions, but programming research often  forgets about those. In this interactive essay, we represent programs as lists of  interactions and we explore the consequences of this idea in a simple programming environment for data exploration. " />
+  <meta name="keywords" content="programming languages, data science, human-computer interaction, programming tools" />
+  <meta name="author" content="Tomas Petricek" />
+  <meta name="copyright" content="Tomas Petricek" />
+
+  <meta property="og:title" content="Histogram: You have to know the past to understand the present" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="http://tomasp.net/histogram" />
+  <meta property="og:image" content="http://tomasp.net/histogram/card.png" />
+  <meta property="og:description" content="To invent new programming tools, we need to shift our focus from programs to programming. Programs are created through a variety of interactions, but programming research often  forgets about those. In this interactive essay, we represent programs as lists of  interactions and we explore the consequences of this idea in a simple programming environment for data exploration. " />
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@tomaspetricek">
+  <meta name="twitter:creator" content="@tomaspetricek">
+  <meta name="twitter:title" content="Histogram: You have to know the past to understand the present" />
+  <meta name="twitter:image" content="http://tomasp.net/histogram/card.png" />
+  <meta name="twitter:description" content="To invent new programming tools, we need to shift our focus from programs to programming. Programs are created through a variety of interactions, but programming research often  forgets about those. In this interactive essay, we represent programs as lists of  interactions and we explore the consequences of this idea in a simple programming environment for data exploration. " />
+
 </head>
 <body>
 <header>
 <div class="container">
   <div class="row"><div class="col-sm-12 col-md-10 col-lg-7">
 
-    <h1><strong>Histogram:</strong>
-      You have to know the past to understand the present</h1>
+    <h1><strong>Histogram:</strong> You have to know the past to understand the present</h1>
 
   </div></div>
-  <div class="row"><div class="col-sm-12 col-lg-9 col-xl-8 markdown">
+  <div class="row align-items-end"><div class="col-sm-12 col-lg-7 col-xl-7 markdown">
 
     <p class="author"><strong>Tomas Petricek</strong>, University of Kent<br />
     <a href="http://twitter.com/tomaspetricek">@tomaspetricek</a> |
@@ -30,18 +50,18 @@
     code, run it interactively to check whether it works, use copy and paste, apply a
     refactoring or choose an item from an auto-complete list. Programming research often
     forgets about these and represents programs as the resulting text. Consequently,
-    thinking about such interactions is often out of scope. This essay shift focus from
+    thinking about such interactions is often out of scope. This essay shifts focus from
     _programs_ to a more interesting question of _programming_.
 
-    We represent programs as _lists of interactions_ such as triggering an
-    auto-complete and choosing an option, declaring a value, introducing a variable
-    or evaluating a piece of code. We explore a number of consequences of thinking about
-    programs as lists of interactions:
-
-     - If we introduce a function via refactoring, we will know sample values for its inputs.
-     - If programmer executes some code, we can later give them more precise auto-complete hints.
-     - We can display the same program as text, but also in a format akin to spreadsheets.
-     - We can easily let programmers create programs by interacting with live previews.
+    We represent programs as _lists of interactions_ such as triggering an auto-complete
+    and choosing an option, declaring a value, introducing a variable or evaluating a piece
+    of code. We explore a number of consequences of this way of thinking about programs.
+    First, if we introduce all functions via a refactoring, we can always get a sample value for
+    their inputs and use those for debugging. Second, if a programmer executes some code
+    interactively, we can use information about its results to give a more precise suggestions
+    in auto-complete. Third, we can display the same program as text, but also in a view inspired
+    by spreadsheets. Fourth, we can easily let programmers create programs by directly interacting
+    with live previews.
 
     We discuss the key ideas through examples in a simple programming environment for data
     exploration. Our focus in this essay is more on principles than on providing fine tuned
@@ -52,6 +72,41 @@
     The data exploration environment in this interactive essay may not yet be that, but it
     gives a glimpse of the future.
 
+  </div><div class="d-none d-lg-block col-lg-5 col-xl-5 markdown toc">
+
+    Table of contents
+
+     1. [**Introduction:** From programs to programming](#s1)
+     2. [**Background:** How data analysts work](#s2)
+     3. [**Histogram:** Programs as lists of interactions](#s3)
+        - 3.1 [Interacting with the Histogram environment](#s3_1)
+        - 3.2 [Representing programs as lists of interactions](#s3_2)
+        - 3.3 [Turning formulas into reusable functions](#s3_3)
+     4. [**Environments:** Two ways of looking at programs](#s4)
+        - 4.1 [Editing Histogram programs as code](#s4_1)
+        - 4.2 [Editing Histogram programs in a spreadsheet](#s4_2)
+        - 4.3 [Creating programs with direct manipulation](#s4_3)
+     5. [**Type system:** Checking based on history](#s5)
+        - 5.1 [Well-constructed programs do not go wrong](#s5_1)
+        - 5.2 [Refining types based on values](#s5_2)
+        - 5.3 [User experience of type refinement](#s5_3)
+     6. [**Implementation:** Building an interactive essay](#s6)
+     7. [**Remarks:** Design choices and future work](#s7)
+        - 7.1 [From constructing to editing](#s7_1)
+        - 7.2 [Simplifying the spreadsheet interface](#s7_2)
+        - 7.3 [Experts and keyboard-based interactions](#s7_3)
+        - 7.4 [Histogram programs as Histogram values](#s7_4)
+        - 7.5 [Lowering the cost of abstraction](#s7_5)
+     8. [**Conclusions:** Glimpse of the future](#s8)
+
+    Interactive demonstrations
+
+     - Demo: [Data exploration using a notebook](#d1)
+     - Demo: [Interacting with the Histogram environment](#scrolly1)
+     - Demo: [Turning formulas into reusable functions](#scrolly2)
+     - Demo: [Editing Histogram code in a spreadsheet](#scrolly3)
+     - Demo: [Creating programs via direct manipulation](#d2)
+     - Demo: [Refining types based on values](#scrolly4)
   </div></div>
 </div>
 </header>
@@ -63,13 +118,14 @@
 <div class="d-none d-lg-block" style="height:25px"></div>
 
 > **Supported devices.** This essay includes interactive demos that are not optimized
-> for small screens and touch. To fully explore the demos, you will need a laptop.
+> for small screens and touch. To fully explore the demos, you will need a desktop computer or a laptop.
 > The page has been tested with recent versions of Firefox and Chrome.
 
 </div>
 <div class="col-sm-12 col-md-11 col-lg-8 col-xl-7 markdown">
 
-**Introduction:** From programs to programming
+
+**_1._ Introduction:** From programs to programming
 ----------------------------------------------
 
 A typical theorem of a theoretical programming language research paper starts with a phrase
@@ -103,7 +159,7 @@ but equally interesting consequences.
 </div></div>
 <div class="row align-items-end"><div class="col-sm-12 col-md-11 col-lg-8 col-xl-7 markdown">
 
-**Background:** How data analysts work
+**_2._ Background:** How data analysts work
 --------------------------------------
 
 Programmatic data analysis makes for a perfect sample domain for research on interactive programming
@@ -133,11 +189,11 @@ and we are interested in major accidents that resulted in multiple deaths.
 
 </div></div></div>
 
-<div class="demo" id="screen1" style="height:2400px"><div id="screen1-body" class="demo-body">
+<div class="demo" id="screen1" style="height:2181px"><div id="screen1-body" class="demo-body">
 <div class="container">
   <div class="row">
     <div class="col-sm-10 demo-top">
-      <h2><strong>Demo:</strong> Programmatic data exploration using a notebook</h2>
+      <h2><a name="d1"><strong>Demo:</strong> Programmatic data exploration using a notebook</a></h2>
     </div>
   </div>
   <div class="row">
@@ -194,7 +250,7 @@ There are programming environments for which the above points do not hold. For e
 demo and observations are typical for present day workflow of a data analyst who uses programming
 tools. As we will see,
 
-**Histogram**: Programs as lists of interactions
+**_3._ Histogram**: Programs as lists of interactions
 ------------------------------------------------
 
 The key idea of this essay is that we should represent programs as lists of interactions.
@@ -204,7 +260,7 @@ prototype environment _Histogram_ (a compound of _history_ and _programming_ whi
 to do with data visualization). We start with a short demo of Histogram and then discuss how
 exactly Histogram works behind the scenes.
 
-### Interacting with the Histogram environment
+### _3.1_ Interacting with the Histogram environment
 
 The following demo uses Histogram to load a file `avia.csv`, which contains data on air traffic
 accidents in Europe for all years between 1990 and 2017. We find a row that corresponds to accidents
@@ -221,7 +277,7 @@ killed in the [Germanwings Fligth 9525 crash](https://en.wikipedia.org/wiki/Germ
 
 </div></div></div>
 
-<div class="demo" id="scrolly1" style="height:1500px"><div id="scrolly1-body" class="demo-body">
+<div class="demo" id="scrolly1" style="height:6231px"><div id="scrolly1-body" class="demo-body">
 <div class="container-fluid bigger-container">
   <div id="scrolly1-out">
   </div>
@@ -368,7 +424,7 @@ textboxes and it replays the interactions with the user interface. Histogram rep
 as lists of interactions, but the user interface elements are not a part of the _language
 specification_. The next section clarifies what counts as an _interaction_ in Histogram.
 
-### Representing programs as lists of interactions
+### _3.2_ Representing programs as lists of interactions
 
 The representation of programs that we use in our prototype is perhaps best explained through a
 small formal definition. Readers not familiar with programming language theory notation can see
@@ -434,7 +490,7 @@ program state, it is close to being a full description that one could use to rei
 Histogram system. We did not say much about the $\text{abstract}$ interaction and we will rectify
 that next.
 
-### Turning formulas into reusable functions
+### _3.3_ Turning formulas into reusable functions
 
 We already discussed one design principle in Histogram -- _prefer choosing over composing_.
 The following demo will illustrate another design principle, which is _always let users see
@@ -445,7 +501,7 @@ want to let programmers introduce custom operations or _function values_.
 
 </div></div></div>
 
-<div class="demo" id="scrolly2" style="height:1200px"><div id="scrolly2-body" class="demo-body">
+<div class="demo" id="scrolly2" style="height:10731px"><div id="scrolly2-body" class="demo-body">
 <div class="container-fluid bigger-container">
   <div id="scrolly2-out">
   </div>
@@ -760,7 +816,7 @@ constructing the body of the function.
 </div></div>
 <div class="row align-items-end"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
-**Environments**: Two ways of looking at programs
+**_4._ Environments**: Two ways of looking at programs
 ------------------------------------------------
 
 Earlier in this essay, we discussed how data analysts use Jupyter notebooks to write Python
@@ -771,7 +827,7 @@ even a simple language like Python requires significant programming skills. Ther
 gap_ between spreadsheets and programming tools, meaning that one cannot easily transition from
 one to the other. The approach that we use in Histogram has a potential to bridge this gap.
 
-### Editing Histogram programs as code
+### _4.1_ Editing Histogram programs as code
 
 The Histogram language does not have a fixed syntax. Programs are represented as lists of
 interactions. It is not expected that programmers will directly write such lists. Instead, we
@@ -811,7 +867,7 @@ function, because those are also displayed twice. One interesting problem is how
 environment behave when the programmer starts editing formula that appears in multiple places.
 We return to this issue in the future work section.
 
-### Editing Histogram programs in a spreadsheet
+### _4.2_ Editing Histogram programs in a spreadsheet
 
 In the following demo, we construct the same program as above -- a visualization showing total
 number of deaths in air traffic accidents per year. This time, the analysis is done in a
@@ -835,7 +891,7 @@ the right display values and let you interact with the system.
 
 </div></div></div>
 
-<div class="demo" id="scrolly3" style="height:1200px"><div id="scrolly3-body" class="demo-body">
+<div class="demo" id="scrolly3" style="height:10881px"><div id="scrolly3-body" class="demo-body">
 <div class="container-fluid bigger-container">
   <div id="scrolly3-out">
   </div>
@@ -1091,7 +1147,7 @@ operations as first-class values might not be obvious and so our view hides this
 </div></div>
 <div class="row align-items-end"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
 
-### Creating programs through direct manipulation
+### _4.3_ Creating programs with direct manipulation
 
 When using a spreadsheet system such as Excel, you do not need to write code. Instead, many
 tools for manipulating data in the spreadsheet are exposed through user interface. This way
@@ -1120,11 +1176,11 @@ some time to load.
 
 </div></div></div>
 
-<div class="demo" id="screen2" style="height:2400px"><div id="screen2-body" class="demo-body">
+<div class="demo" id="screen2" style="height:5721px"><div id="screen2-body" class="demo-body">
 <div class="container">
   <div class="row">
     <div class="col-sm-10 demo-top">
-      <h2><strong>Demo:</strong> Creating programs through direct manipulation</h2>
+      <h2><a name="d2"><strong>Demo:</strong> Creating programs through direct manipulation</a></h2>
     </div>
   </div>
   <div class="row">
@@ -1195,7 +1251,7 @@ programmers learn how to use the system:
    for our data table previews, lowers the barriers to computer programming and supports transfer
    learning ([Hundhausen et al., 2009](#refs)).
 
-**Type system:** Checking based on history
+**_5._ Type system:** Checking based on history
 ------------------------------------------
 
 Treating programs as lists of interactions has a number of interesting consequences. So far,
@@ -1216,7 +1272,7 @@ in the auto-complete lists, both when offering members and when offering possibl
 an operation. We first discuss how Histogram types guarantee correctness and then look at an
 interesting interaction between types and the evaluation interaction.
 
-### Well-typed interactions construct correct programs
+### _5.1_ Well-constructed programs do not go wrong
 
 There are a number of ways in which Histogram programs can be incorrect. For example, we a program
 could try to access a non-existent member of an object or attempts to apply arguments to a value
@@ -1278,7 +1334,7 @@ could also prove that it offers all possible interactions. We leave this as futu
 instead focus on one interesting aspect of how the $\text{evaluate}$ interaction interacts with
 the type system.
 
-### Refining types based on values
+### _5.2_ Refining types based on values
 
 In all the earlier interactive demos, we used the `data.load` operation to load a CSV file from
 a given (relative) URL. The `load` operation can load any CSV file and it does not know anything
@@ -1293,18 +1349,20 @@ program just constructs code that calls `data.load("data/avia.csv")`, the type o
 be an untyped data table where you can only access columns dynamically based on a name stored as
 a string. However, if a program also includes an interaction that evaluates the call to `load`,
 the type changes to a typed data table where columns are exposed as members. The following demo
-illustrates this behaviour.
+illustrates this behaviour by looking at two rows that represent the
+2015 [Germanwings Fligth 9525 crash](https://en.wikipedia.org/wiki/Germanwings_Flight_9525)
+and the 2001 [Linate Airport disaster](https://en.wikipedia.org/wiki/Linate_Airport_disaster).
 
 </div></div></div>
 
-<div class="demo" id="scrolly4" style="height:1500px"><div id="scrolly4-body" class="demo-body">
+<div class="demo" id="scrolly4" style="height:8081px"><div id="scrolly4-body" class="demo-body">
 <div class="container-fluid bigger-container">
   <div id="scrolly4-out">
   </div>
 </div>
 </div></div>
 
-<script type="text/histgram" id="scrolly4-source" data-skip-events="1" data-title="Interacting with the Histogram environment">[
+<script type="text/histgram" id="scrolly4-source" data-skip-events="1" data-title="Refining types based on values">[
   {"kind":"caption","number":1, "text":"First, we construct code to load the 'data/avia.csv' file and assign the result to a variable 'avia', but do not evaluate its value."},
   {"kind":"completions","reference":-1},
   {"kind":"menu","selected":0},
@@ -1455,75 +1513,251 @@ illustrates this behaviour.
 ]
 </script>
 
-<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8 markdown">
+<div class="container"><div class="row"><div class="col-sm-12 col-md-9 col-lg-8 markdown references">
 
-Random thoughts
------------
+The idea that evaluation can affect types of a program may seem unconventional at first, but this
+is just a matter of perspective. A Histogram program is a list of interactions and evaluation is
+one such interaction. The type of a value represented by a reference thus only depends on the
+interactions -- or parts of a program -- involving the reference.
 
-You cannot modify programs
+The way this behaviour is implemented in Histogram is quite simple. Each library, such as the one
+providing the global `data` value can define a \textit{refine} function that looks as follows:
 
-more spreadsheets - why not show table inline? indeed...
+```mathjax
+\textit{refine} : \textit{type} \times \textit{value} \rightarrow \textit{type}
+```
 
-experts want keyboards - doable, it's a bit like writing Coq proofs
-For example, we could provide a prompt similar to command line
-and let expert programmers who prefer keyboard add interactions by typing commands.
+When processing the $\text{evaluate}$ interaction, Histogram computes the value for a specified
+reference, stores it as part of the current program state and invokes the $\textit{refine}$
+function to obtain a new more specific type for the reference. In our prototype, the types
+returned by the $\textit{refine}$ operation are always subtypes of the original type and so
+this preserves the property that programs created using well-typed interactions remain well-typed.
 
-Functions could be more like replaying commands
+### _5.3_ User experience of type refinement
 
-You do not see the program itself in its environments, but you could
+Furthermore, the user experience that is made possible thanks to our approach is, in fact,
+familiar in a number of existing developer environments. Recall the motivating example
+of using the pandas library in a Jupyter notebook to load and process data. Python defers all
+checking to runtime, but the way you typically interact with the system is that you write code to
+load an input file (or a sample input file), run it and only then continue writing code to process
+it. In our example, we only wrote `raw.value` after we run code to load the `raw` data table and
+after we saw the available columns in the preview. Histogram captures this way of working and
+makes it an inherent part of its type system.
+
+Another case of similar user experience is when writing JavaScript code in the console window of
+[Firefox Developer tools](https://developer.mozilla.org/en-US/docs/Tools). When you type
+`"test".length` followed by a `.` you get a completion list with members of a number value. However,
+if you define a function `length` that returns the `length` member of its arguments and type
+`length("test")` followed by a `.` you do not get any suggestions. The difference is that, in
+the first case, the editor silently evaluates the code, because it assumes this will not have
+unexpected consequences, but in the second case, it does not. This is a somewhat ad-hoc decision
+made by the tool authors and Histogram provides a more principled way of capturing it.
+
+Finally, our approach is also related to the way type providers ([Syme et al. 2013](#refs), [Christiansen, 2013](#refs))
+work. Type providers execute code at compile-time to generate static types from external data
+sources. They can also take static parameters such as database name or service URL, but those have
+to be constants that are known at compile-time. Provided types are then used to generate
+auto-complete suggestions when writing code. Type providers are similar to the way Histogram works
+in that some code is evaluated in order to give more precise type information. However, type
+providers are limited to a two-stage way of working -- they run at compile-time and can only depend
+on constant parameters. The mechanism in Histogram can be seen as a generalisation that supports
+multiple stages. This can be useful in data science scenarios that dynamically transform data and
+might, for example, drop certain columns dynamically based on the values they contain.
+
+**_6._ Implementation:** Building an interactive essay
+------------------------------------------------------
+
+Before discussing the design choices and future work, it is worth adding a few notes on how has
+this interactive essay been implemented. This essay uses the capabilities provided by the web
+to allow the reader experience some aspects of the design of the Histogram system. We believe that
+this way of presenting the work lets us focus on the important aspects of our work -- rather than
+developing theoretical foundations of Histogram or conducting user study, we want to communicate
+the style of interaction and some of the consequences of our system design. This essay thus follows
+some of the ideas discussed in a recent position paper on evaluating programming systems design
+by [Edwards et al. (2019)](#refs).
+
+The code behind the present essay is available [on GitHub](https://github.com/tpetricek/histogram).
+The implementation is written in F# and uses the [Fable compiler](https://fable.io) to compile
+it into JavaScript. One technically interesting aspect of our implementation is how the
+scrollytelling effect is implemented, especially because our approach could be likely reused in
+other similar essays.
+
+Our system uses the Elm architecture, also known as model-view-update ([Czaplicki et al., 2019](#refs))
+where a user interface consists of a type representing the current state (model) together with a
+type representing events (updates) that can occur in the user interface, a function that updates
+the current state when an event occurs and a function that can render the current state.
+
+In our case, the model type includes the Histogram program and various properties of the user
+interface. The updates include various user interface events to highlight and select references in
+the Histogram program and choose items in a menu, but also an event that represents a Histogram
+interaction as defined in section 3.2. The interactive demos in this essay are represented simply
+as lists of events that are passed to the update function of our system as the reader scrolls
+through the page. We want to show what interacting with the prototype user interface looks like
+and so those events include both Histogram interactions and also other user interface events.
+Although our current implementation is not directly reusable, the general pattern of using
+Elm architecture, representing demos as lists of events and exposing them via scrollytelling
+seems to be an easy to reuse method for building interactive essays.
 
 
-edit code - incomplete chains - we can keep the rest somewhere outside of program (we know it from history)
+**_7._ Remarks:** Design choices and future work
+------------------------------------------------
 
-"all the programming langauges have been invented already" - nope
+This essay does not aim to present a fully developed and functional programming system. Instead,
+it should be seen as an exploration of ideas in a certain design space. As such, it leaves many
+open questions, unexplored links and possible directions for future work. In this section, we
+briefly review some of those.
+
+### _7.1_ From constructing to editing
+
+The most obvious limitation of our system is that it does not allow the user to modify a program
+once it has been constructed. You can create a program, but the only way of changing it is to
+undo interactions and redo them differently. This lets users correct small mistakes, but it is
+inadequate for a real-world system.
+
+There are several ways in which editing of programs could be supported. We could either rewrite the
+history and treat program edits as meta-interactions, or we could add new kinds of interactions to
+represent different edit operations. In the future, we plan to explore the latter approach, but
+both of these pose the same interesting problem. Program edits can make programs (at least
+temporarilly) invalid. This can be addressed by introducing holes as done by Hazel
+([Omar et al., 2019](#refs), [Omar et al., 2017](#refs)), but our program representation allows
+another possible approach.
+
+Imagine that we add an interaction that removes a formula at a given reference. We can keep
+the displayed program valid and so we also recursively remove all formulas that depend on the
+one removed by the user. This can remove quite a lot of code, but this code is not lost. The
+environment knows about it, because it is a part of the history and it could then offer the user
+to restore the temporarily removed code once the errors caused by the initial deletion are
+resolved. The user experience of this approach remains to be investigated, but we belive this
+might be a compelling (or a complementary) alternative to an approach based on holes.
+
+### _7.2_ Simplifying the spreadsheet interface
+
+Our prototype comes with a somewhat more programmer-focused code-based interface and a somewhat
+more user-focused interface akin to a spreadsheet. Both of these could be further improved to
+better support their respective users. Our spreadsheet view displays code in cells, whereas a
+typical spreadsheet displays values. We could do this for references that have been evaluated,
+but many of our values would not fit in a single spreadsheet cell and we would need to be able
+to map a reference to a range in the spreadsheet. We could then display a data table or a row
+as an actual data table in the spreadsheet. There are other values that might not be easy to
+display in a spreadsheet such as operations -- we briefly discuss these in section 6.5. Finally,
+our spreadsheet uses automatic layout and it would be interesting to find ways of giving the user
+(more) control over how this is done.
+
+### _7.3_ Experts and keyboard-based interactions
+
+A complementary problem is how to better serve expert users. Our current prototype can display
+programs as code, but the interactions with those are through arguably cumbersome user interface.
+An appealing alternative would be to offer a command prompt where programmers can enter
+interactions using a keyboard. This could be made efficient by using suitable shortcuts and
+auto-complete. Interestingly, this way of interacting with the system is somewhat similra to
+the way in which thorem provers like Coq ([Barras et al., 1997](#refs)) work. To prove a theorem
+in Coq, one invokes a series of tactics that transform the proof obligations. A proof is
+a list of tactic invocations, which is similar to our case where a program is a list
+of programming interactions.
+
+### _7.4_ Histogram programs as Histogram values
+
+In a recent discussion, [Basman et al. (2018)](#refs) and [Petricek (2018)](#refs) discuss how
+to design a programming substrate, or programming environment, that would enable open authorship,
+i.e. allow the users to gradually progress from using a system to making small changes and,
+eventually, to modifying the system itself. Smalltalk [(Goldberg and Robson, 1983)](#refs) is a
+canonical example of a system that can be modified through itself, although this requires expert
+programming skills.
+
+The current Histogram prototype is very simple and does not even let you create new objects such
+as the built-in `data` value. However, it is interesting to consider how this could be changed.
+The first interesting step would be to make a Histogram program, i.e. the list of interactions a
+value that could, itself, be edited and modified in the Histogram environment. More specifically,
+we could represent individual interactions as members that are invoked on an object that
+represents the program. This could make Histogram more powerful by enabling an interesting form
+of meta-programming in the language.
+
+### _7.5_ Lowering the cost of abstraction
+
+Finally, the current Histogram prototype makes it easier to construct functions by starting with
+concrete data, writing code to process it and then extracting a function by choosing some inputs
+as parameters. This is more concrete than writing a function in a traditional programming language,
+but we are still left with conceptually challenging function values in our program. We would like
+to make this experience more akin to using the "copy down" functionality in Excel that copies a
+formula to a table of inputs.
+
+One possible approach is to use something akin to managed copy-and-paste from the Subtext
+system ([Edwards, 2005](#refs), [Edwards, 2006](#refs)). This would make it possible to reuse the
+same code in multiple contexts, perhaps with modifications. It would also fit well with our
+approach as copy-and-paste could be just another kind of interaction. Another approach would be
+to represent functions as hypothetical interactions -- a function constructed from a concrete
+computation would be a sequence of interactions that copy its arguments to the input references,
+followed by an evaluate interaction and an interaction that copies the result back to a reference
+specified by the caller. This is, in fact, how our current prototype implements functions, but
+we do not currently expose this to the user.
+
+**_8._ Conclusions:** Glimpse of the future
+-------------------------------------------
+
+Every now and then, somebody remarks that all programming languages have already been invented
+or, at least, that we have already explored most of the interesting corners of the desing space
+for programming languages. The purpose of this essay is to show that there still are unexplored
+corners and that we can make relatively simple but design decisions that will have interesting
+consequences.
+
+The key idea in this essay was to represent programs as lists of interactions that were used to
+create the program. This way, we want to shift focus from thinking about _programs_ to thinking
+about _programming_. The key concepts of a programming language stop being different kinds of
+expressions, but rather operations such as refactoring, the use of auto-complete and interactive
+evaluation of part of code.
+
+We explored the idea in the context of a simple programming environment for data exploration.
+Our way of representing programs has a number of interesting consequences. If we construct
+functions via a refactoring, we can keep the original inputs as sample values for previews;
+if we include evaluation as an interaction, our type system can give more precise information
+for parts of program that have been evaluated. Our way of representing programs also enables
+valuable user interface features. We can display the same program both as source code and as
+a spreadsheet and we can easily let users construct programs by directly manipulating data in
+previews.
+
+As the quote by Carl Sagan that we borrowed for the title of this essay says, "You have to know
+the past to understand the present". When it comes to programs, knowing their past might not be
+strictly necessary for understanding their present, but it certainly enables a range of interesting
+user experiences that is worth a further study or, perhaps, even a new programming paradigm.
 
 References
 ----------
 
-Kluyver, T., Ragan-Kelley, B., Pérez, F., Granger, B.E., Bussonnier, M., Frederic, J., Kelley, K., Hamrick, J.B., Grout, J., Corlay, S. & Ivanov, P. (2016).
-Jupyter Notebooks-a publishing format for reproducible computational workflows. In ELPUB (pp. 87-90).
+ 1. Aaron, S., & Blackwell, A. F. (2013). _From sonic Pi to overtone: creative musical experiences with domain-specific and functional languages_. In Proceedings of the first ACM SIGPLAN workshop on Functional art, music, modeling & design (pp. 35-46). ACM.
+ 1. Barras, B., Boutin, S., Cornes, C., Courant, J., Filliatre, J. C., Gimenez, E., Herbelin, H., Huet, G., Munoz, C., Murthy, C., et al. (1997). _The Coq proof assistant reference manual: Version 6.1_. Research Report RT-0203, INRIA. 1997,pp.214.
+ 1. Basman, A., Tchernavskij, P., Bates, S., & Beaudouin-Lafon, M. (2018). _An anatomy of interaction: co-occurrences and entanglements_. In Conference Companion of the 2nd International Conference on Art, Science, and Engineering of Programming (pp. 188-196). ACM.
+ 1. Burnett, M. M., Atwood, J. W., & Welch, Z. T. (1998). _Implementing level 4 liveness in declarative visual programming languages_. In Proceedings. 1998 IEEE Symposium on Visual Languages (Cat. No. 98TB100254) (pp. 126-133). IEEE.
+ 1. Christiansen, D. R. (2013). _Dependent type providers_. In Proceedings of the 9th ACM SIGPLAN workshop on Generic programming (pp. 25-34). ACM.
+ 1. Chugh, R., Hempel, B., Spradlin, M., & Albers, J. (2016). _Programmatic and direct manipulation, together at last_. In ACM SIGPLAN Notices (Vol. 51, No. 6, pp. 341-354). ACM.
+ 1. Cyrus, O., Voysey, I., Chugh, R., & Hammer, M. A. (2019). _Live functional programming with typed holes_. Proceedings of the ACM on Programming Languages, 3(POPL), 14.
+ 1. Cyrus, O., Voysey, I., Hilton, M., Aldrich, J., & Hammer, M. A. (2017). _Hazelnut: a bidirectionally typed structure editor calculus_. ACM SIGPLAN Notices, 52(1), 86-99.
+ 1. Czaplicki, E. and contributors (2019). _The Elm Architecture_. Available online at [https://guide.elm-lang.org/architecture/](https://guide.elm-lang.org/architecture/)
+ 1. DeLine, R., Fisher, D., Chandramouli, B., Goldstein, J., Barnett, M., Terwilliger, J. F., & Wernsing, J. (2015). _Tempe: Live scripting for live data_. In VL/HCC (pp. 137-141).
+ 1. Edwards, J. (2006). _First Class Copy & Paste_. Computer Science and Artificial Intelligence Laboratory Technical Report, MIT-CSAIL-TR-2006-037
+ 1. Edwards, J. (2005). _Subtext: uncovering the simplicity of programming_. In ACM SIGPLAN Notices (Vol. 40, No. 10, pp. 505-518). ACM.
+ 1. Edwards, J., Kell, S., Petricek, T., Church, L. (2019). _Evaluating programming systems design_. To appear in proceedings of the 30th Annual Workshop of the Psychology of Programming Interest Group, PPIG 2019
+ 1. Goldberg, A., & Robson, D. (1983). _Smalltalk-80: the language and its implementation_. Addison-Wesley Longman Publishing Co., Inc..
+ 1. Hundhausen, C. D., Farley, S. F., & Brown, J. L. (2009). _Can direct manipulation lower the barriers to computer programming and promote transfer of training?: An experimental study_. ACM Transactions on Computer-Human Interaction (TOCHI), 16(3), 13.
+ 1. Kluyver, T., Ragan-Kelley, B., Pérez, F., Granger, B.E., Bussonnier, M., Frederic, J., Kelley, K., Hamrick, J.B., Grout, J., Corlay, S. & Ivanov, P. (2016). _Jupyter Notebooks-a publishing format for reproducible computational workflows_. In ELPUB (pp. 87-90).
+ 1. Ludäscher, B., Altintas, I., Berkley, C., Higgins, D., Jaeger, E., Jones, M., ... & Zhao, Y. (2006). _Scientific workflow management and the Kepler system_. Concurrency and Computation: Practice and Experience, 18(10), 1039-1065.
+ 1. Maloney, J. H., & Smith, R. B. (1995). _Directness and liveness in the morphic user interface construction environment_. In ACM Symposium on User Interface Software and Technology (Vol. 95, pp. 21-28).
+ 1. McDirmid, S. (2013). _Usable live programming_. In Proceedings of the 2013 ACM international symposium on New ideas, new paradigms, and reflections on programming & software (pp. 53-62). ACM.
+ 1. McDirmid, S. (2007). _Living it up with a live programming language_. In ACM SIGPLAN Notices (Vol. 42, No. 10, pp. 623-638). ACM.
+ 1. McKinney, W. (2011). _pandas: a foundational Python library for data analysis and statistics_. Python for High Performance and Scientific Computing, 14.
+ 1. Petricek, T. (2018). _Critique of 'An anatomy of interaction: co-occurrences and entanglements'_. In Conference Companion of the 2nd International Conference on Art, Science, and Engineering of Programming (pp. 197-201). ACM.
+ 1. Petricek, T., Guerra, G., & Syme, D. (2016). _Types from data: Making structured data first-class citizens in F#_. In ACM SIGPLAN Notices (Vol. 51, No. 6, pp. 477-490). ACM.
+ 1. Sandewall, E. (1978). _Programming in an interactive environment: the LISP experience_. ACM Computing Surveys, 10(1), 35-71.
+ 1. Sarkar, A., Gordon, A. (2018). _How do people learn to use spreadsheets? (Work in progress)_. In Proceedings of the 29th Annual Conference of the Psychology of Programming Interest Group (PPIG 2018), pp28-35.
+ 1. Scherlis, W. L., & Scott, D. S. (1983). _First steps towards inferential programming_. In Program Verification (pp. 99-133). Springer, Dordrecht, 1993.
+ 1. Schiller, J., Turbak, F., Abelson, H., Dominguez, J., McKinney, A., Okerlund, J., & Friedman, M. (2014). _Live programming of mobile apps in App Inventor_. In Proceedings of the 2nd Workshop on Programming for Mobile & Touch (pp. 1-8). ACM.
+ 1. Seyser, D., & Zeiller, M. (2018). _Scrollytelling -- An Analysis of Visual Storytelling in Online Journalism_. In 2018 22nd International Conference Information Visualisation (IV) (pp. 401-406). IEEE.
+ 1. Shneiderman, B. (1981). _Direct manipulation: A step beyond programming languages_. In ACM SIGSOC Bulletin (Vol. 13, No. 2-3, p. 143). ACM.
+ 1. Syme, D., Battocchi, K., Takeda, K., Malayeri, D., & Petricek, T. (2013). _Themes in information-rich functional programming for internet-scale data sources_. In Proceedings of the 2013 workshop on Data driven functional programming (pp. 1-4). ACM.
+ 1. Tanimoto, S. L. (2013). _A perspective on the evolution of live programming_. In Proceedings of the 1st International Workshop on Live Programming (pp. 31-34). IEEE Press.
+ 1. Victor, B. (2012). _Inventing on principle_. CUSEC 2012. Available online at: [https://vimeo.com/36579366](https://vimeo.com/36579366)
+ 1. Victor, B. (2012). _Learnable programming? Designing a programming system for understanding programs_. Available online at: [http://worrydream.com/LearnableProgramming/](http://worrydream.com/LearnableProgramming/)
 
-McKinney, W. (2011). pandas: a foundational Python library for data analysis and statistics. Python for High Performance and Scientific Computing, 14.
 
-Goldberg, A., & Robson, D. (1983). Smalltalk-80: the language and its implementation. Addison-Wesley Longman Publishing Co., Inc..
-
-Sandewall, E. (1978). Programming in an interactive environment: the LISP experience. ACM Computing Surveys, 10(1), 35-71.
-
-DeLine, R., Fisher, D., Chandramouli, B., Goldstein, J., Barnett, M., Terwilliger, J. F., & Wernsing, J. (2015, October). Tempe: Live scripting for live data. In VL/HCC (pp. 137-141).
-
-Victor, B. (2012). Inventing on principle.
-
-Seyser, D., & Zeiller, M. (2018, July). Scrollytelling -- An Analysis of Visual Storytelling in Online Journalism. In 2018 22nd International Conference Information Visualisation (IV) (pp. 401-406). IEEE.
-
-Petricek, T., Guerra, G., & Syme, D. (2016, June). Types from data: Making structured data first-class citizens in F. In ACM SIGPLAN Notices (Vol. 51, No. 6, pp. 477-490). ACM.
-
-Ludäscher, B., Altintas, I., Berkley, C., Higgins, D., Jaeger, E., Jones, M., ... & Zhao, Y. (2006). Scientific workflow management and the Kepler system. Concurrency and Computation: Practice and Experience, 18(10), 1039-1065.
-
-Victor, B. (2012). Learnable programming. Worrydream. com.
-
-Maloney, J. H., & Smith, R. B. (1995, November). Directness and liveness in the morphic user interface construction environment. In ACM Symposium on User Interface Software and Technology (Vol. 95, pp. 21-28).
-
-Burnett, M. M., Atwood, J. W., & Welch, Z. T. (1998, September). Implementing level 4 liveness in declarative visual programming languages. In Proceedings. 1998 IEEE Symposium on Visual Languages (Cat. No. 98TB100254) (pp. 126-133). IEEE.
-
-Tanimoto, S. L. (2013, May). A perspective on the evolution of live programming. In Proceedings of the 1st International Workshop on Live Programming (pp. 31-34). IEEE Press.
-
-McDirmid, S. (2013, October). Usable live programming. In Proceedings of the 2013 ACM international symposium on New ideas, new paradigms, and reflections on programming & software (pp. 53-62). ACM.
-
-McDirmid, S. (2007, October). Living it up with a live programming language. In ACM SIGPLAN Notices (Vol. 42, No. 10, pp. 623-638). ACM.
-
-Aaron, S., & Blackwell, A. F. (2013, September). From sonic Pi to overtone: creative musical experiences with domain-specific and functional languages. In Proceedings of the first ACM SIGPLAN workshop on Functional art, music, modeling & design (pp. 35-46). ACM.
-
-Schiller, J., Turbak, F., Abelson, H., Dominguez, J., McKinney, A., Okerlund, J., & Friedman, M. (2014, October). Live programming of mobile apps in App Inventor. In Proceedings of the 2nd Workshop on Programming for Mobile & Touch (pp. 1-8). ACM.
-
-Sarkar, A., Gordon, A. (2018). How do people learn to use spreadsheets? (Work in progress). In Proceedings of the 29th Annual Conference of the Psychology of Programming Interest Group (PPIG 2018), pp28-35.
-
-Chugh, R., Hempel, B., Spradlin, M., & Albers, J. (2016, June). Programmatic and direct manipulation, together at last. In ACM SIGPLAN Notices (Vol. 51, No. 6, pp. 341-354). ACM.
-
-Shneiderman, B. (1981, May). Direct manipulation: A step beyond programming languages. In ACM SIGSOC Bulletin (Vol. 13, No. 2-3, p. 143). ACM.
-
-Hundhausen, C. D., Farley, S. F., & Brown, J. L. (2009). Can direct manipulation lower the barriers to computer programming and promote transfer of training?: An experimental study. ACM Transactions on Computer-Human Interaction (TOCHI), 16(3), 13.
-
-Scherlis, W. L., & Scott, D. S. (1983). First steps towards inferential programming. In Program Verification (pp. 99-133). Springer, Dordrecht, 1993.
 </div>
 </div>
 </div>
@@ -1532,12 +1766,25 @@ Scherlis, W. L., & Scott, D. S. (1983). First steps towards inferential programm
 
   <script src="bundle.js"></script>
   <script type="text/javascript">
-  var style = document.getElementsByTagName("link")[3].href;
-  window.onkeydown = function(e) {
-    if (e.keyCode == 27) {
-      document.getElementsByTagName("link")[3].href = style + "?" + ("" + Math.random()).substr(2)
+  if (window.location.toString().indexOf("localhost") != -1) {
+    var style = document.getElementsByTagName("link")[3].href;
+    window.onkeydown = function(e) {
+      if (e.keyCode == 27) {
+        document.getElementsByTagName("link")[3].href = style + "?" + ("" + Math.random()).substr(2)
+      }
     }
   }
+  </script>
+
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-1561220-1']);
+    _gaq.push(['_trackPageview']);
+    (function () {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
   </script>
 </body>
 </html>

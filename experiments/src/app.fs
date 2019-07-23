@@ -1242,7 +1242,7 @@ let viewHeader unclip id trigger state title =
           Browser.window.scrollTo(0., s.offsetTop + s.offsetHeight - Browser.window.innerHeight) )
         makeIcon "Turn auto-play on again and lose all edits." "paperclip" state.Modified unclip
       ]
-      h?h2 [] [ h?strong [] [ text "Demo: " ]; text title ]
+      h?h2 [] [ h?a [ "name" => id ] [ h?strong [] [ text "Demo: " ]; text title ] ]
     ]
   ]
 
@@ -1714,6 +1714,22 @@ for i in 0 .. int mdElements.length - 1 do
   let html = reg.Replace(html, fun m -> "\(" + m.Value.Trim('$') + "\)")
   el.innerHTML <- html.Replace("--", "&ndash;")
 
+let h2Elements = Browser.document.getElementsByTagName("h2")
+for i in 0 .. int h2Elements.length - 1 do
+  let el = h2Elements.[i] |> unbox<Browser.HTMLElement>
+  let a = Browser.document.createElement_a()
+  a.setAttribute("name", "s"+ el.innerText.[0].ToString())
+  for _ in 0 .. int el.children.length - 1 do a.appendChild(el.removeChild(el.lastChild)) |> ignore
+  el.appendChild(a) |> ignore
+
+let h3Elements = Browser.document.getElementsByTagName("h3")
+for i in 0 .. int h3Elements.length - 1 do
+  let el = h3Elements.[i] |> unbox<Browser.HTMLElement>
+  let a = Browser.document.createElement_a()
+  a.setAttribute("name", "s"+ el.innerText.[0].ToString() + "_" + el.innerText.[2].ToString())
+  for _ in 0 .. int el.children.length - 1 do a.appendChild(el.removeChild(el.lastChild)) |> ignore
+  el.appendChild(a) |> ignore
+  
 let latexElements = Browser.document.getElementsByClassName("mathjax")
 for i in 0 .. int latexElements.length - 1 do
   let el = latexElements.[i] |> unbox<Browser.HTMLElement>

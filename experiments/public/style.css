@@ -1,18 +1,27 @@
 /* Text and standard document formatting */
 body { font-family:'PT Sans', sans-serif; }
 header { padding:40px 0px 30px 0px; background:black; color:white; }
-header a { color:#8ab6ee; }
-header a:hover { color:#aecef8; }
+header a { color:#7398C6; }
+header a:hover { color:#8ab6ee; }
 article { padding:30px 0px 30px 0px; }
 h1 { font:300 30pt 'Kreon'; line-height:1.1em; }
 h2 { font:300 24pt 'Kreon'; line-height:1em; margin:25px 0px 5px 0px; }
 h3 { font:300 18pt 'Kreon'; line-height:1em; margin:10px 0px 5px 0px; }
-p { font-size: 13pt; }
+h1 em, h2 em, h3 em { font-style:normal; margin-right:0.25em }
+p, li { font-size: 13pt; }
+.references ol { margin:0px; padding:0px; list-style:none; }
+.references ol li { font-size: 12pt; padding:0px; margin:8px 0px 0px 20px; text-indent:-20px; }
 p.author { font-size: 14pt; line-height:1.3em; margin:30px 0px 35px 0px;  }
 code { font:400 11pt 'roboto mono', monaco, consolas, monospace; color:#a67413; }
 blockquote { border-left:solid 4px #e0e0e0; padding-left:15px; color:#a0a0a0 }
 blockquote p { font-size:12pt; }
 .mathjax { margin:15px 0px 15px 20px; }
+
+header .toc li { font-size:11pt; }
+header .toc ol { margin-left:20px; }
+header .toc ul { margin-left:5px; list-style:none; }
+header .toc ol ul, header .toc ol ul li { list-style:none; margin:0px; padding:0px; }
+header .toc p { margin:0px 0px 5px 45px; font-size:12pt }
 
 /* Formatting for demo blocks, both interactive and screencasts */
 .demo .tools { float:right; margin-top:30px; }
