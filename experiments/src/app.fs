@@ -915,12 +915,12 @@ let renderCode trigger (state:Model) =
               //yield h?span [ "class" => "indent" ] (renderReferencedExpression ctx ([ref], ref))
 
           | Indexed n, false ->
-              yield h?span [ "class" => "let" ] [ h?strong [] [ text (sprintf "do[%d]" n) ] ]
+              yield h?span [ "class" => "let" ] [ h?strong [] [ text (sprintf "cell[%d]" n) ] ]
               yield h?div [ "class" => "indent" ] (renderReferencedExpression ctx ([ref], ref))
           | _ -> ()
         ]
       yield h?div [ "class" => "indent" ] [
-        yield h?span [ "class" => "let" ] [ text "do" ]
+        yield h?span [ "class" => "let" ] [ text "cell" ]
         yield h?div [ "style" => "display:inline-block" ] [
           yield h?button [
             "class" => "plus"
@@ -1232,6 +1232,7 @@ let viewHeader unclip id trigger state title =
   h?div [ "class" => "row" ] [
     h?div [ "class" => "col-sm-12 demo-top" ] [
       h?div [ "class" => "tools" ] [
+        makeIcon "Turn auto-play on again and lose all edits." "paperclip" state.Modified unclip
         makeIcon "Jump to the start of the interactive demo." "angle-double-left" true (fun () ->
           let s = Browser.document.getElementById(id)
           Browser.window.scrollTo(0., s.offsetTop) )
@@ -1240,7 +1241,6 @@ let viewHeader unclip id trigger state title =
         makeIcon "Jump to the end of the interactive demo." "angle-double-right" true (fun () ->
           let s = Browser.document.getElementById(id)
           Browser.window.scrollTo(0., s.offsetTop + s.offsetHeight - Browser.window.innerHeight) )
-        makeIcon "Turn auto-play on again and lose all edits." "paperclip" state.Modified unclip
       ]
       h?h2 [] [ h?a [ "name" => id ] [ h?strong [] [ text "Demo: " ]; text title ] ]
     ]
