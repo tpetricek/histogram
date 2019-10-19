@@ -229,6 +229,7 @@ let renderTo (node:HTMLElement) dom =
 let createVirtualDomAsyncApp id initial r u = 
   let event = new Event<'E>()
   let stateChanged = new Event<'S>()
+  let eventTriggered = new Event<_>()
   let trigger e = event.Trigger(e)  
   let mutable container = document.createElement("div") :> Node
   document.getElementById(id).innerHTML <- ""
@@ -251,6 +252,7 @@ let createVirtualDomAsyncApp id initial r u =
   let mutable running = false
   event.Publish.Add(fun e -> Async.StartImmediate <| async { 
     try
+      eventTriggered.Trigger(e)
       //printfn "Adding to queue: %A" e
       queue <- queue @ [e]
       if running then () //printfn "Already processing."
@@ -264,13 +266,13 @@ let createVirtualDomAsyncApp id initial r u =
           let! s = u trigger state e
           events.Add(e)
           setState s 
-          printfn "Done with: %A" e
+          //printfn "Done with: %A" e
         //printfn "Finished processing."
         running <- false
     with e ->
       Fable.Import.Browser.console.error(e)
     })
-  trigger, setState, stateChanged.Publish
+  trigger, setState, stateChanged.Publish, eventTriggered.Publish
 
 
 let createVirtualDomApp id initial r u = 

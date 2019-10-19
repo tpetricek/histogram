@@ -1,6 +1,49 @@
 ﻿module App
 
 // ------------------------------------------------------------------------------------------------
+// Logging
+// ------------------------------------------------------------------------------------------------
+
+module Logging = 
+  open Fable.Import
+  open Fable.Core
+
+  let ssid = System.Guid.NewGuid().ToString()
+  let cookies = Browser.document.cookie.Split(';') |> Seq.choose (fun s -> 
+    match s.Trim().Split('=') with [|k;v|] -> Some(k, v) | _ -> None) |> Map.ofSeq
+  let usrid = 
+    match cookies.TryFind "hgrusrid" with
+    | Some usrid -> usrid
+    | None ->
+        let usrid = System.Guid.NewGuid().ToString()
+        Browser.document.cookie <- "hgrusrid=" + usrid
+        usrid
+
+  let pendingEvents = ResizeArray<_>()
+  let mutable logTimer = -1.0
+
+  let writeLog () = 
+    logTimer <- -1.0
+    if pendingEvents.Count > 0 then
+      let req = Browser.XMLHttpRequest.Create()
+      req.``open``("POST", "https://thegamma-logs.azurewebsites.net/log/histogram");
+      req.send(pendingEvents |> String.concat "\n")
+      pendingEvents.Clear()
+
+  let logEvent (id:string) (evt:string) data =
+    let obj = 
+      [ "user", box usrid; "session", box ssid;
+        "time", box (System.DateTime.Now.ToString("o")) 
+        "id", box id; "event", box evt
+        "data", data ] |> JsInterop.createObj
+    // Browser.console.log(obj)
+    pendingEvents.Add(JS.JSON.stringify(obj))
+    if logTimer <> -1.0 then Browser.window.clearTimeout(logTimer)
+    logTimer <- Browser.window.setTimeout(writeLog, 2000);  
+
+  logEvent "na" "loaded" Browser.window.navigator.userAgent
+
+// ------------------------------------------------------------------------------------------------
 // Types
 // ------------------------------------------------------------------------------------------------
 
@@ -1378,12 +1421,14 @@ let framePreview ctx headers (rows:(string[] * Value)[]) =
       match ref with Some ref -> return ref | _ -> return failwith "framePreview: Expected some reference" }
 
   let interactSortBy order k = Async.StartImmediate <| async {
+    Logging.logEvent "preview" "sortby" <| JsInterop.createObj [ "order", box order; "key", box k ]
     let! sortRef = ctx.Interact (Complete(Dot(ctx.Reference, "sort by"))) |> getRef
     let! finalRef = ctx.Interact (Complete(Dot(sortRef, k + " " + order))) |> getRef
     let! _ = ctx.Interact (Evaluate(finalRef)) 
     ctx.Select finalRef }
 
   let interactAt i = Async.StartImmediate <| async {
+    Logging.logEvent "preview" "at" <| JsInterop.createObj [ "index", box i ]
     let! atRef = ctx.Interact (Complete(Dot(ctx.Reference, "at"))) |> getRef
     let! valRef = ctx.Interact(DefineValue(PrimitiveValue(float i), PrimitiveType("number"))) |> getRef
     let! applyRef = ctx.Interact (Complete(Apply(atRef, "index", valRef))) |> getRef
@@ -1391,6 +1436,7 @@ let framePreview ctx headers (rows:(string[] * Value)[]) =
     ctx.Select applyRef }
 
   let interactEquals neq isNumeric k v = Async.StartImmediate <| async {
+    Logging.logEvent "preview" "equals" <| JsInterop.createObj [ "neq", box neq; "numeric", box isNumeric; "key", box k; "value", box v ]
     let! filterRef = ctx.Interact (Complete(Dot(ctx.Reference, "filter by"))) |> getRef
     let! opRef = ctx.Interact (Complete(Dot(filterRef, k + (if neq then " not equals" else " equals") ))) |> getRef
     let! valRef = 
@@ -1683,6 +1729,7 @@ let createSlideshow ppf prefix images =
   let mutable imgs = unbox<Browser.HTMLImageElement> imga, unbox<Browser.HTMLImageElement> imgb
   let captions = readCaptions (prefix + "-captions")
   createScrolly (new Event<_>()).Publish prefix ppf images.Length (fun i ->
+    Logging.logEvent prefix "slideshow" (box i)
     let iprev, inext = imgs
     inext.src <- images.[i].src
     iprev.className <- "frame-out"
@@ -1778,14 +1825,18 @@ let createInteractive initial sheetMode id = async {
       clipped <- false
       unclipEvent.Trigger()
 
-    let trigger, setState, stateChanged = createVirtualDomAsyncApp (id + "-out") initial (view unclip id title) update
+    let trigger, setState, stateChanged, eventTriggered = createVirtualDomAsyncApp (id + "-out") initial (view unclip id title) update
     stateChanged.Add(fun state -> clipped <- state.Modified)
+    eventTriggered.Add(fun evt ->         
+        Logging.logEvent id "event" (Serializer.serializeEvent evt)
+    )
     
     let agent = createEvalAgent (update trigger) initial events
     //printfn "%s has %d events" id events.Length
     createScrolly unclipEvent.Publish id 50 (events.Length - skipEvents + 1) (fun i -> Async.StartImmediate <| async {
       //printfn "scroll %s to %d" id i
       if not clipped then
+        Logging.logEvent id "scroll" (box i)
         let! state = agent.PostAndAsyncReply(fun ch -> i + skipEvents, ch)
         setState { state with Modified = false }
     })
