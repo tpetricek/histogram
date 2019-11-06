@@ -9,3 +9,4 @@ paket.exe
 paket-files
 *.log
 .ionide
+experiments/src/bin
